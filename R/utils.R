@@ -93,7 +93,7 @@ are_num_vals_close <- function(valname, sol_env, ignore.case = FALSE,
       if (!is.numeric(sub_val)) {
         add_feedback("* `", valname, "` was not numeric")
       } else {
-        res["vals_match"] <- (sub_val - sol_val) < tolerance
+        res["vals_match"] <- abs(sub_val - sol_val) < tolerance
       }
     }
   }
