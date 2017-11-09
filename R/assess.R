@@ -57,18 +57,27 @@ reset_feedback <- function() {
 #' @param filename name of submission file
 #' @param key key table (see \code{\link{compile_key}})
 #' @param sub_id unique submission identifier
+#' @param use_sub_env whether each submission code chunk is to be run
+#'   within the submission environment (to allow for dependencies
+#'   between chunks) or whether to be run in the solution environment
+#'   of the previous chunk (to allow recovery from errors).  In the
+#'   former case, all but the first of the `key$start_env`
+#'   environments will be ignored.
 #' @return A table
 #' @export
-assess_submission <- function(filename, sub_id = filename, key) {
-  ## create submission environments so we don't overwrite the
-  ## starting environments with data from the submission
-  ## sub_envs <- purrr::map(key[["start_env"]], ~ new.env(parent = .x))
+assess_submission <- function(filename, sub_id = filename, key,
+                              use_sub_env = TRUE) {
   sub_chunks <- tangle(filename)
   ix <- seq_along(key[["task"]])
   names(ix) <- key[["task"]]
+
+  this_env <- NULL
+  if (use_sub_env) {
+    this_env <- key[["start_env"]][[1]]
+  }
+  
   res <- purrr::map(key[["task"]], function(x) {
     reset_feedback()
-    ## sol_ix <- which(names(sub_envs) == x) + 1L
     if (!(x %in% names(sub_chunks))) {
       add_feedback("code block", x, "was missing from your RMarkdown file",
                    sep = " ")
@@ -76,8 +85,11 @@ assess_submission <- function(filename, sub_id = filename, key) {
     } else {
       this_code <- sub_chunks[[x]]
     }
+    if (!use_sub_env) {
+      this_env <- key[["start_env"]][[x]]
+    }
     assess_task(sub_id, x, this_code,
-                key[["a_code"]][[x]], key[["start_env"]][[x]])
+                key[["a_code"]][[x]], this_env, use_sub_env)
   })
   names(res) <- key[["task"]]
 
@@ -97,8 +109,13 @@ assess_submission <- function(filename, sub_id = filename, key) {
 #' @param a_code
 #' @param orig_env
 #' @export
-assess_task <- function(sub_id, task, sub_code, a_code, orig_env) {
-  sub_env <- new.env(parent = orig_env)
+assess_task <- function(sub_id, task, sub_code, a_code,
+                        orig_env, use_sub_env = TRUE) {
+  if (!use_sub_env) {
+    sub_env <- new.env(parent = orig_env)
+  } else {
+    sub_env <- orig_env
+  }
   assign("result", list(), sub_env)
   assign("current_code", sub_code, sub_env)
   fig <- ""
