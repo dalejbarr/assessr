@@ -36,6 +36,7 @@ tangle <- function(filename) {
 #' @param s_file name of Rmd solution file
 #' @param a_file name of Rmd file with assessment code
 #' @param overwrite overwrite \code{solution} directory if it exists?
+#' @param workdir working directory
 #' @details Sets up environments for running submission code and
 #'   assessment code.  Creates object \code{sol_env} in each
 #'   environment which has the solution environment needed for
@@ -45,7 +46,8 @@ tangle <- function(filename) {
 #' @return a list containing the starting environments for each task
 #' @seealso \code{\link{tangle}}
 #' @export
-compile_key <- function(s_file, a_file, overwrite = FALSE) {
+compile_key <- function(s_file, a_file, overwrite = FALSE,
+                        workdir = NULL) {
   a_chunks <- tangle(a_file)
   tasks <- names(a_chunks)
   if (any(grepl("___", tasks))) {
@@ -73,6 +75,10 @@ compile_key <- function(s_file, a_file, overwrite = FALSE) {
   dir.create("solution")
   
   lastchunk <- 0L
+  oldwd <- getwd()
+  if (!is.null(workdir)) {
+    setwd(workdir) # living dangerously
+  }
   for (i in seq_along(tasks_ix)) {
     this_env <- new.env(parent = lastenv)
     to_run <- setdiff((lastchunk + 1L):tasks_ix[i], tasks_ix[i])
@@ -96,23 +102,26 @@ compile_key <- function(s_file, a_file, overwrite = FALSE) {
     }
     
     if (ix <- purrr::detect_index(res, evaluate::is.error)) {
-      ## setwd(curwd)
-      stop(res[[ix]][["message"]])
+      setwd(oldwd)
+      stop(geterrmessage(res[[ix]]))
     }
     lastenv <- this_env
     lastchunk <- to_run[length(to_run)]
     starting_env[[i]] <- this_env
   }
+  setwd(oldwd)
 
-  for (i in seq_len(length(starting_env) - 1L)) {
-    assign("sol_env", starting_env[[i + 1L]], starting_env[[i]])
-  }
+  ##for (i in seq_len(length(starting_env) - 1L)) {
+  ##  assign("sol_env", starting_env[[i + 1L]], starting_env[[i]])
+  ##}
   names(starting_env) <- c(tasks, "")
+  solution_envs <- starting_env[-1]
+  names(solution_envs) <- tasks
 
   tibble::tibble(task = tasks,
                  s_code = sol_chunks[tasks],
                  a_code = a_chunks[tasks],
                  start_env = starting_env[-length(starting_env)],
-                 sol_env = starting_env[-1],
+                 sol_env = solution_envs,
                  figpath = figlist)
 }

@@ -5,20 +5,38 @@ uname <- function(x, t, s, z = NULL) {
     paste(x, t, s, z, sep = "___")
 }
 
+#' Visit a submission file
+#'
+#' @param files a vector with names of submission files
+#' @param x moodle id number (see \code{\link{moodle_id}})
+#' @details Finds the filename within \code{files} that corresponds to
+#'   a given moodle id, and opens it with \code{file.edit}
+#' @export
+visit <- function(files, x) {
+  file.edit(files[which(moodle_id(files) == x)])
+}
+
 #' Browse assessment
 #'
 #' View assessment code and figure output and modify assessment values
 #' in a shiny gadget
 #'
 #' @importFrom magrittr %>%
-#' @param filename name of the assessment results \code{.rds} file
+#' @param x filename of the assessment results \code{.rds} file or the tibble contained in such file
 #' @details launches a shiny gadget allowing the assessor to change the auto-generated values
 #' @return table containing the new values and feedback for the task
 #' @export
-browse_assessment <- function(filename) {
+browse_assessment <- function(x) {
   ## set things up
   ## we will potential modify columns vars and fbk. keep the other cols
-  ares <- readRDS(filename)
+  if (is.character(x)) {
+    ares <- readRDS(x)
+  } else if (inherits(x, "data.frame")) {
+    ares <- x
+  } else {
+    stop("unrecognized argument for 'x'; must be a character string or tibble")
+  }
+    
   keep_cols <- setdiff(names(ares), c("sub_id", "task", "vars", "fbk"))
   orig_colorder <- names(ares)
   all_tasks <- unique(ares[["task"]])

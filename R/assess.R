@@ -23,11 +23,12 @@ get_blacklist <- function() {
 #'
 #' @param ... character strings giving feedback
 #' @param sep separator for character strings
+#' @param add whether to add or ignore
 #' @export
-add_feedback <- function(..., sep = " ") {
-  do.call("cat", c(list(...), list("\n",
-                                   file = file.path(tempdir(), ".fbk"),
-                                   sep = sep, append = TRUE)))
+add_feedback <- function(..., sep = "", add = TRUE) {
+  str <- do.call("paste", c(..., list(sep = sep)))
+  if (add) 
+    cat(str, "\n", file = file.path(tempdir(), ".fbk"), append = TRUE)
 }
 
 #' Output the feedback
@@ -35,9 +36,10 @@ add_feedback <- function(..., sep = " ") {
 #' @export
 give_feedback <- function() {
   if (file.exists(file.path(tempdir(), ".fbk"))) {
-    dat <- paste(readLines(file.path(tempdir(), ".fbk")), collapse = "\n\n")
+    dat <- paste(stringr::str_trim(readLines(file.path(tempdir(), ".fbk"))),
+                 collapse = "\n")
     reset_feedback()
-    dat
+    stringr::str_trim(dat)
   } else {
     invisible(NULL)
   }
@@ -63,10 +65,11 @@ reset_feedback <- function() {
 #'   of the previous chunk (to allow recovery from errors).  In the
 #'   former case, all but the first of the `key$start_env`
 #'   environments will be ignored.
+#' @param workdir the working directory in which to evaluate the code
 #' @return A table
 #' @export
 assess_submission <- function(filename, sub_id = filename, key,
-                              use_sub_env = TRUE) {
+                              use_sub_env = TRUE, workdir = NULL) {
   sub_chunks <- tangle(filename)
   ix <- seq_along(key[["task"]])
   names(ix) <- key[["task"]]
@@ -75,7 +78,12 @@ assess_submission <- function(filename, sub_id = filename, key,
   if (use_sub_env) {
     this_env <- key[["start_env"]][[1]]
   }
-  
+
+  oldwd <- getwd()
+  if (!is.null(workdir)) {
+    setwd(workdir)
+  }
+
   res <- purrr::map(key[["task"]], function(x) {
     reset_feedback()
     if (!(x %in% names(sub_chunks))) {
@@ -88,26 +96,35 @@ assess_submission <- function(filename, sub_id = filename, key,
     if (!use_sub_env) {
       this_env <- key[["start_env"]][[x]]
     }
-    assess_task(sub_id, x, this_code,
-                key[["a_code"]][[x]], this_env, use_sub_env)
+    assign("sol_env", key[["sol_env"]][[x]], envir = this_env)
+    ff <- safely_assess_task(sub_id, x, this_code,
+                             key[["a_code"]][[x]], this_env, use_sub_env)
+    if (!is.null(ff[["error"]])) {
+      setwd(oldwd)
+      stop(ff[["error"]][["message"]])
+    } else {
+      ff[["result"]]
+    }
   })
+  setwd(oldwd)
   names(res) <- key[["task"]]
 
   tibble::enframe(res, "task") %>%
     tidyr::unnest() %>%
       dplyr::mutate(sub_id = sub_id, filename = filename,
                     code = sub_chunks[key[["task"]]]) %>%
-      select(sub_id, task, vars:fbk, code, filename)
+      select(sub_id, task, vars:fbk, err, code, filename)
 }
 
 #' Assess individual task
 #'
 #' Assess an individual task from a submission
-#' @param sub_id
-#' @param task
-#' @param sub_code
-#' @param a_code
-#' @param orig_env
+#' @param sub_id submission id
+#' @param task name of task to assess
+#' @param sub_code submission code
+#' @param a_code assessment code
+#' @param orig_env starting environment in which to evaluate submission code
+#' @param use_sub_env set to \code{TRUE} if you want to run in a single submission environment; \code{FALSE} to use the solution as starting environment
 #' @export
 assess_task <- function(sub_id, task, sub_code, a_code,
                         orig_env, use_sub_env = TRUE) {
@@ -116,7 +133,7 @@ assess_task <- function(sub_id, task, sub_code, a_code,
   } else {
     sub_env <- orig_env
   }
-  assign("result", list(), sub_env)
+  assign("._result", list(), sub_env)
   assign("current_code", sub_code, sub_env)
   fig <- ""
 
@@ -127,7 +144,8 @@ assess_task <- function(sub_id, task, sub_code, a_code,
   ## sub_code <- strsplit(sub_code, "\n")[[1]]
   forbidden <- get_blacklist()
   fb_regx <- forbidden[["regex"]]
-  is_forbid <- purrr::map_lgl(fb_regx, ~ any(grepl(.x, sub_code)))
+  is_forbid <- purrr::map_lgl(fb_regx, ~ any(grepl(.x,
+                                                   remove_comments(sub_code))))
   forbid <- FALSE
   if (any(is_forbid)) {
     forbid <- TRUE
@@ -135,7 +153,8 @@ assess_task <- function(sub_id, task, sub_code, a_code,
       "Certain functions should *never* be called from an RMarkdown script.",
       "These functions are unsafe, require user input, or are just unnecessary.",
       "We found the following 'forbidden' function(s) in your RMarkdown script: ",
-      paste(paste0("`", forbidden[is_forbid, "fn"], "()`", collapse = ", ")))
+      paste(paste0("`", forbidden[is_forbid, "fn"], "()`"), collapse = ", ",
+            "\n", sep = ""))
     ## remove them
     for (i in forbidden[is_forbid, "regex"]) {
       sub_code <- gsub(i, "## \\2(", sub_code)
@@ -161,11 +180,13 @@ assess_task <- function(sub_id, task, sub_code, a_code,
 
   ## check for errors
   errs <- purrr::map_lgl(result, evaluate::is.error)
+  err <- FALSE
   if (any(errs)) {
-    fbk <- paste0("your code generated the following error(s):\n",
+    fbk <- paste0("your code generated the following error(s):\n```\n",
                   paste(purrr::map_chr(result[errs], purrr::pluck, "message"),
-                        collapse = "\n"), "\n")
+                        collapse = "\n"), "\n```\n")
     add_feedback(fbk)
+    err <- TRUE
   }
 
   ## run the assessment code
@@ -180,10 +201,14 @@ assess_task <- function(sub_id, task, sub_code, a_code,
     stop("assessment code failed for ", sub_id, " task ", task, ":\n", msg)
   }
 
-  a_vars <- tibble::enframe(unlist(get("result", sub_env)), "var", "value")
+  a_vars <- tibble::enframe(unlist(get("._result", sub_env)), "var", "value")
 
   tibble::tibble(vars = list(a_vars),
                  fig = fig,
                  forbid = forbid,
-                 fbk = paste("", give_feedback(), collapse = "\n"))
+                 fbk = stringr::str_trim(paste("", give_feedback(),
+                                               collapse = "\n")),
+                 err = err)
 }
+
+safely_assess_task <- purrr::safely(assess_task)
