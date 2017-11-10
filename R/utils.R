@@ -211,8 +211,9 @@ are_columns_identical <- function(subtbl, subcol,
                                   sol_env,
                                   soltbl = subtbl,
                                   solcol = subcol,
-                                  ignore_order = FALSE,
+                                  ignore_order = TRUE,
                                   add = TRUE) {
+  ##browser()
   res <- FALSE
   sol_tbl <- get(soltbl, envir = sol_env)
   sub_tbl <- safe_get_table(subtbl, parent.frame(), add)

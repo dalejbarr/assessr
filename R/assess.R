@@ -55,7 +55,7 @@ reset_feedback <- function() {
 }
 
 #' Assess a submission
-#'
+#' 
 #' @param filename name of submission file
 #' @param key key table (see \code{\link{compile_key}})
 #' @param sub_id unique submission identifier
@@ -76,7 +76,8 @@ assess_submission <- function(filename, sub_id = filename, key,
 
   this_env <- NULL
   if (use_sub_env) {
-    this_env <- key[["start_env"]][[1]]
+    ## use a copy so that things are fresh for each submission
+    this_env <- new.env(parent = key[["start_env"]][[1]])
   }
 
   oldwd <- getwd()
@@ -86,18 +87,53 @@ assess_submission <- function(filename, sub_id = filename, key,
 
   res <- purrr::map(key[["task"]], function(x) {
     reset_feedback()
-    if (!(x %in% names(sub_chunks))) {
-      add_feedback("code block", x, "was missing from your RMarkdown file",
-                   sep = " ")
-      this_code <- ""
-    } else {
-      this_code <- sub_chunks[[x]]
-    }
     if (!use_sub_env) {
-      this_env <- key[["start_env"]][[x]]
-    }
+      ## use a copy so that things are fresh for each submission
+      this_env <- new.env(parent = key[["start_env"]][[x]])
+    } else {
+      #########################################
+      ## TODO: run any intervening blocks here
+      code_cur <- which(names(sub_chunks) == x)
+      if (length(code_cur)) {  ## it exists
+        ## what are the names of sub_chunks previous to this one
+        chk_names_pre <- names(sub_chunks)[seq_len(code_cur - 1L)]
+        if (length(chk_names_pre)) { # there are previous chunks
+          ## what are the names of tasks previous to this one
+          task_names_pre <- key[["task"]][seq_len(which(key[["task"]] == x) - 1L)]
+          if (length(task_names_pre)) {
+            ## which preceding blocks have task names
+            pre <- purrr::map_lgl(chk_names_pre, ~ .x %in% task_names_pre)
+            ## find the numeric index of last task that was executed
+            chk_ix_pre <- max(seq_along(pre)[pre])
+          } else {
+            chk_ix_pre <- 0L
+          }
+          ## get indices of intervening blocks
+          chk_todo <- setdiff(seq(chk_ix_pre, code_cur, 1L),
+                              c(chk_ix_pre, code_cur))
+          purrr::walk(chk_todo, function(nx) {
+            result <- evaluate::evaluate(sub_chunks[[nx]],
+                                         this_env,
+                                         new_device = FALSE)
+            ## check for errors
+            errs <- purrr::map_lgl(result, evaluate::is.error)
+            if (any(errs)) {
+              fbk <- paste0("your code chunk named `", names(sub_chunks)[nx],
+                            "` generated the following error(s):\n```\n",
+                            paste(purrr::map_chr(result[errs],
+                                                 purrr::pluck, "message"),
+                                  collapse = "\n"), "\n```\n")
+              add_feedback(fbk)
+            }
+          })
+        }
+      }
+    } ##############################################
+    ## now any intervening blocks will have run
+    
+    ## copy the solution environment over to this_env
     assign("sol_env", key[["sol_env"]][[x]], envir = this_env)
-    ff <- safely_assess_task(sub_id, x, this_code,
+    ff <- safely_assess_task(sub_id, x, sub_chunks,
                              key[["a_code"]][[x]], this_env, use_sub_env)
     if (!is.null(ff[["error"]])) {
       setwd(oldwd)
@@ -121,13 +157,21 @@ assess_submission <- function(filename, sub_id = filename, key,
 #' Assess an individual task from a submission
 #' @param sub_id submission id
 #' @param task name of task to assess
-#' @param sub_code submission code
+#' @param codelist list of all submission code chunks
 #' @param a_code assessment code
 #' @param orig_env starting environment in which to evaluate submission code
 #' @param use_sub_env set to \code{TRUE} if you want to run in a single submission environment; \code{FALSE} to use the solution as starting environment
 #' @export
-assess_task <- function(sub_id, task, sub_code, a_code,
+assess_task <- function(sub_id, task, codelist, a_code,
                         orig_env, use_sub_env = TRUE) {
+
+  sub_code <- codelist[[task]]
+  if (is.null(sub_code)) {
+    sub_code <- ""
+    add_feedback("code block `", task, "` was missing from your RMarkdown file",
+                 sep = " ")
+  }
+  
   if (!use_sub_env) {
     sub_env <- new.env(parent = orig_env)
   } else {

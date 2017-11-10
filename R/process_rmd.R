@@ -37,6 +37,7 @@ tangle <- function(filename) {
 #' @param a_file name of Rmd file with assessment code
 #' @param overwrite overwrite \code{solution} directory if it exists?
 #' @param workdir working directory
+#' @param savefig save any files created in solution subdirectory?
 #' @details Sets up environments for running submission code and
 #'   assessment code.  Creates object \code{sol_env} in each
 #'   environment which has the solution environment needed for
@@ -47,7 +48,7 @@ tangle <- function(filename) {
 #' @seealso \code{\link{tangle}}
 #' @export
 compile_key <- function(s_file, a_file, overwrite = FALSE,
-                        workdir = NULL) {
+                        workdir = NULL, save_fig = TRUE) {
   a_chunks <- tangle(a_file)
   tasks <- names(a_chunks)
   if (any(grepl("___", tasks))) {
@@ -63,16 +64,18 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
   figlist <- vector("character", length(tasks))
   names(figlist) <- tasks
 
-  ## TODO check if solution directory exists and if so,
+  ## check if solution directory exists and if so,
   ## delete if overwrite is TRUE
-  if (dir.exists("solution")) {
-    if (overwrite) {
-      unlink("solution", recursive = TRUE)
-    } else {
-      stop("directory 'solution' exists and overwrite = FALSE")
+  if (save_fig) {
+    if (dir.exists("solution")) {
+      if (overwrite) {
+        unlink("solution", recursive = TRUE)
+      } else {
+        stop("directory 'solution' exists and overwrite = FALSE")
+      }
     }
+    dir.create("solution")
   }
-  dir.create("solution")
   
   lastchunk <- 0L
   oldwd <- getwd()
@@ -89,7 +92,7 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
     res <- evaluate::evaluate(todo, envir = this_env, new_device = FALSE,
                               stop_on_error = 0L)
     dev.off()
-    if (file.exists(imgfile)) {      
+    if (file.exists(imgfile) && save_fig) {      
       if (to_run[length(to_run)] %in% tasks_ix) {
         ## save it
         this_task <- names(sol_chunks)[to_run[length(to_run)]]

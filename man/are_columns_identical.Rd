@@ -5,7 +5,7 @@
 \title{Are table column values identical}
 \usage{
 are_columns_identical(subtbl, subcol, sol_env, soltbl = subtbl,
-  solcol = subcol, ignore_order = FALSE, add = TRUE)
+  solcol = subcol, ignore_order = TRUE, add = TRUE)
 }
 \arguments{
 \item{subtbl}{name of submission table}

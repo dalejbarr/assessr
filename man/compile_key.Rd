@@ -4,7 +4,8 @@
 \alias{compile_key}
 \title{Compile the assessment key}
 \usage{
-compile_key(s_file, a_file, overwrite = FALSE, workdir = NULL)
+compile_key(s_file, a_file, overwrite = FALSE, workdir = NULL,
+  save_fig = TRUE)
 }
 \arguments{
 \item{s_file}{name of Rmd solution file}
@@ -14,6 +15,8 @@ compile_key(s_file, a_file, overwrite = FALSE, workdir = NULL)
 \item{overwrite}{overwrite \code{solution} directory if it exists?}
 
 \item{workdir}{working directory}
+
+\item{savefig}{save any files created in solution subdirectory?}
 }
 \value{
 a list containing the starting environments for each task

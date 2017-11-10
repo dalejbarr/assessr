@@ -40,7 +40,7 @@ browse_assessment <- function(x) {
   keep_cols <- setdiff(names(ares), c("sub_id", "task", "vars", "fbk"))
   orig_colorder <- names(ares)
   all_tasks <- unique(ares[["task"]])
-
+  
   ## make tabset panels
   ## each task will be defined in output$task_data
   tp <-
@@ -76,17 +76,23 @@ browse_assessment <- function(x) {
                                                           collapse = "_"))) %>%
           dplyr::arrange(sort_str, sub_id) %>%
           dplyr::select(-sort_str)
+        ##browser()
         shiny::renderUI({
           ilist <- purrr::pmap(list(ares_task[["sub_id"]],
                                     ares_task[["code"]],
                                     ares_task[["fbk"]],
                                     ares_task[["vars"]],
-                                    ares_task[["fig"]]),
-                               function(x, y, z, v, f) {
+                                    ares_task[["fig"]],
+                                    ares_task[["html"]]),
+                               function(x, y, z, v, f, h) {
                                  s1 <- list(shiny::hr(),
-                                              shiny::p(x), 
-                                              shiny::pre(paste(y,
-                                                               collapse = "\n")))
+                                            if (h == "") shiny::p(x) else shiny::actionButton(paste0("ab_", t, "_", x), x),
+                                            ##ifelse(h != "",
+                                            ##       shiny::a(href = h, x),
+                                            ##       shiny::p(x)),
+                                            ##shiny::p(x), 
+                                            shiny::pre(paste(y,
+                                                             collapse = "\n")))
                                  s2 <- list()
                                  if (f != "") {
                                    ## browser()
@@ -111,6 +117,22 @@ browse_assessment <- function(x) {
       output[[n]] <- op[[n]]
     }
 
+    for (i in unique(ares[["sub_id"]])) {
+      for (j in all_tasks) {
+        local({
+          ii <- i
+          jj <- j
+          observeEvent(input[[paste0("ab_", jj, "_", ii)]],
+          {
+            htm <- ares[["html"]][min(which(ares[["sub_id"]] == ii))]
+            if (file.exists(htm)) {
+              browseURL(htm)
+            }
+          })
+        })
+      }
+    }
+    
     shiny::observeEvent(input$tabpanel, {
       ## print(input$tabpanel)
       ## cat(names(input), "\n")

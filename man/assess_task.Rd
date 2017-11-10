@@ -4,14 +4,14 @@
 \alias{assess_task}
 \title{Assess individual task}
 \usage{
-assess_task(sub_id, task, sub_code, a_code, orig_env, use_sub_env = TRUE)
+assess_task(sub_id, task, codelist, a_code, orig_env, use_sub_env = TRUE)
 }
 \arguments{
 \item{sub_id}{submission id}
 
 \item{task}{name of task to assess}
 
-\item{sub_code}{submission code}
+\item{codelist}{list of all submission code chunks}
 
 \item{a_code}{assessment code}
 
