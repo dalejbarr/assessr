@@ -224,7 +224,8 @@ compile_assignment <- function(subfile,
   } else {
     blist <- NULL
   }
-  
+
+  ##browser()
   if (quiet) {
     sink(tempfile())
     stime <- system.time(
@@ -232,18 +233,18 @@ compile_assignment <- function(subfile,
         res <- render_safely(subfile,
                              rmarkdown::html_document(),
                              output_dir = dirname(subfile),
-                             knit_root_dir = dirname(subfile),
+                             ##knit_root_dir = dirname(subfile),
                              quiet = quiet)))
     sink()
   } else {
     stime <- system.time(res <- render_safely(subfile,
                                               rmarkdown::html_document(),
                                               output_dir = dirname(subfile),
-                                              knit_root_dir = dirname(subfile),
+                                              ##knit_root_dir = dirname(subfile),
                                               quiet = quiet))
   }
 
-  bind_cols(
+  dplyr::bind_cols(
     tibble::tibble(filename = subfile,
                    html = if (is.null(res$result)) "" else res$result,
                    ctime = stime[["user.self"]],
