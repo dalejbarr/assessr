@@ -137,7 +137,7 @@ fn_regex <- function(fname) {
 #'
 #' @param fn function to search for
 #' @param code the submission code (usually you pass the variable
-#'   \code{current_code})
+#'   \code{._ar$current_code})
 #' @return logical; \code{TRUE} if the function is found anywhere in
 #'   the code (comments in the code are ignored).
 #' @export
@@ -276,3 +276,4 @@ safe_get_table <- function(tblname, env, add = TRUE) {
   }
   res
 }
+

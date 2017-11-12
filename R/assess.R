@@ -2,6 +2,9 @@ figdir <- function(sub_id, trailing = FALSE) {
   fdir <- file.path("submission_figs", sub_id)
 }
 
+#' Get blacklisted functions
+#'
+#' @export
 get_blacklist <- function() {
   blacklist <- c("install.packages", "update.packages", "download.packages",
                  "remove.packages",
@@ -9,7 +12,7 @@ get_blacklist <- function() {
                  "setwd", "help", "vignette", "download.file", "system",
                  "help.start",
                  "file.remove", "curl", "View", "browseURL")
-  other <- tribble(~fn,        ~regex,
+  other <- tibble::tribble(~fn,        ~regex,
           "? (help)", "(^|[^[:alnum:]_])*(\\?)\\s*[[:alnum:]]+",
           "library() with no arguments",
                  "(^|[^[:alnum:]_])*(library)[[:space:]]*\\(\\s*\\)")
