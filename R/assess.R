@@ -130,9 +130,11 @@ assess_submission <- function(filename, sub_id = filename, key,
       }
     } ##############################################
     ## now any intervening blocks will have run
-    
+
+    ## create the list to contain assessment params
+    assign("._ar", list(), sub_env)
     ## copy the solution environment over to this_env
-    assign("sol_env", key[["sol_env"]][[x]], envir = this_env)
+    assign("._ar$sol", key[["sol_env"]][[x]], envir = this_env)
     ff <- safely_assess_task(sub_id, x, sub_chunks,
                              key[["a_code"]][[x]], this_env, use_sub_env)
     if (!is.null(ff[["error"]])) {
@@ -177,8 +179,8 @@ assess_task <- function(sub_id, task, codelist, a_code,
   } else {
     sub_env <- orig_env
   }
-  assign("._result", list(), sub_env)
-  assign("current_code", sub_code, sub_env)
+  assign("._ar$result", list(), sub_env)
+  assign("._ar$code", sub_code, sub_env)
   fig <- ""
 
   ## need add_feedback() in the environment

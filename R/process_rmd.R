@@ -1,4 +1,5 @@
 knit_safely <- purrr::safely(knitr::knit)
+render_safely <- purrr::safely(rmarkdown::render, "")
 
 #' Tangle code from Rmd file
 #'
@@ -114,9 +115,6 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
   }
   setwd(oldwd)
 
-  ##for (i in seq_len(length(starting_env) - 1L)) {
-  ##  assign("sol_env", starting_env[[i + 1L]], starting_env[[i]])
-  ##}
   names(starting_env) <- c(tasks, "")
   solution_envs <- starting_env[-1]
   names(solution_envs) <- tasks
@@ -127,4 +125,22 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
                  start_env = starting_env[-length(starting_env)],
                  sol_env = solution_envs,
                  figpath = figlist)
+}
+
+
+
+#' Compile assignment report
+#'
+#' Safely compile assignment report from submitted RMarkdown script
+#'
+#' @param subfile
+#' @export
+compile_assignment <- function(subfile, quiet = FALSE) {
+  res <- render_safely(fname,
+                       rmarkdown::html_document(),
+                       quiet = quiet)
+
+  tibble::tibble(filename = subfile,
+                 html = if (is.null(res$result)) "" else res$result,
+                 err = res$error)
 }
