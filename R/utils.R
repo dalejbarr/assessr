@@ -277,3 +277,19 @@ safe_get_table <- function(tblname, env, add = TRUE) {
   res
 }
 
+#' Get a printable string from error message
+#'
+#' @param x a condition
+#' @return string with the error message
+#' @export
+get_err_string <- function(x) {
+  f <- tempfile()
+  msg <- conditionMessage(x)
+  call <- conditionCall(x)
+  cl <- class(x)[1L]
+  if (!is.null(call)) 
+    cat("<", cl, " in ", deparse(call), ": ", msg, ">\n", 
+        sep = "", file = f)
+  else cat("<", cl, ": ", msg, ">\n", sep = "", file = f)
+  paste(readLines(f), collapse = "\n")
+}

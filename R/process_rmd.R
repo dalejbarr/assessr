@@ -1,5 +1,4 @@
 knit_safely <- purrr::safely(knitr::knit)
-render_safely <- purrr::safely(rmarkdown::render, "")
 
 #' Tangle code from Rmd file
 #'
@@ -125,32 +124,38 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
                  figpath = figlist)
 }
 
-#' Remove blacklisted functions
+#' Check for blacklisted functions
 #'
-#' Comment out any blacklisted functions that appear within a file
+#' Search for, and optionally comment out any blacklisted functions
+#' that appear within an RMarkdown file
 #'
 #' @param subfile path to submission RMarkdown file
+#' @param overwrite if you want to comment out the lines from the original file
 #' @return a tibble with columns \code{blacklist}, whether any functions were found; and \code{bfns}, names of these functions
 #' @details warning: the original file will be overwritten, with any
 #'   lines containing blacklisted code commented out
 #' @seealso \code{\link{get_blacklist}}
 #' @export
-apply_blacklist <- function(subfile) {
+apply_blacklist <- function(subfile, overwrite = TRUE) {
   lines <- readLines(subfile)
   chunk_0 <- grep(knitr::all_patterns$md$chunk.begin, lines)
   chunk_1 <- grep(knitr::all_patterns$md$chunk.end, lines)
   ## TODO: something with the inline code
   inline <- grep("`r .+`", lines)
   msg <- paste0("Malformed RMarkdown file ", subfile, " :\n   ")
-  skip <- FALSE
   if ((length(chunk_0) != length(chunk_1)) || (length(chunk_0) == 0)) {
-    skip <- TRUE
     if (length(chunk_0) == 0) {
       warning(msg, "No chunks found.")
     } else {
       warning(msg, "File contains ", length(chunk_0),
-           " markups for starting chunks, ",
-           "but ", length(chunk_1), " markups for ending chunks.")
+              " markups for starting chunks, ",
+              "but ", length(chunk_1), " markups for ending chunks.")
+      new_c1 <- purrr::map_int(chunk_0, ~ min(chunk_1[chunk_1 > .x]))
+      if ((length(new_c1) - length(chunk_0)) == 1) {
+        new_c1 <- c(new_c1, length(lines) + 1L)
+        lines <- c(lines, "```")
+      }
+      chunk_1 <- new_c1
     }
   }
   fb_regx <- get_blacklist()[["regex"]]
@@ -177,7 +182,7 @@ apply_blacklist <- function(subfile) {
         if (is.null(fs)) {
           ll
         } else {
-          reduce(fs, ~ gsub(fb_regx[.y], "## \\2(", .x), .init = ll)
+          purrr::reduce(fs, ~ gsub(fb_regx[.y], "## \\2(", .x), .init = ll)
         }
       })
       c(lines[c0], lfix, lines[c1])
@@ -194,7 +199,8 @@ apply_blacklist <- function(subfile) {
     dplyr::arrange(ix) %>%
     `[[`("line")
 
-  writeLines(newlines, subfile)
+  if (overwrite) 
+    writeLines(newlines, subfile)
 
   bfns <- get_blacklist()$fn[purrr::flatten(blist) %>% unlist()]
   blacklist <- FALSE
@@ -204,6 +210,7 @@ apply_blacklist <- function(subfile) {
   tibble::tibble(blacklist = blacklist,
                  bfns = list(bfns))
 }
+
 
 #' Compile assignment report
 #'
@@ -217,44 +224,53 @@ apply_blacklist <- function(subfile) {
 #' @export
 compile_assignment <- function(subfile,
                                quiet = FALSE,
-                               blacklist = TRUE) {
-
+                               blacklist = TRUE,
+                               env = parent.frame()) {
   if (blacklist) {
     blist <- apply_blacklist(subfile)
   } else {
-    blist <- NULL
+    blist <- tibble::tibble(blacklist = NA, bfns = list(vector("character")))
   }
 
   ##browser()
+  ptm1 <- proc.time()
   if (quiet) {
     sink(tempfile())
-    stime <- system.time(
+    res <- suppressWarnings(
       suppressMessages(
-        res <- render_safely(subfile,
-                             rmarkdown::html_document(),
-                             output_dir = dirname(subfile),
-                             ##knit_root_dir = dirname(subfile),
-                             quiet = quiet)))
+        tryCatch(
+          rmarkdown::render(subfile,
+                            rmarkdown::html_document(),
+                            ##output_dir = dirname(subfile),
+                            ## knit_root_dir = dirname(subfile),
+                            envir = env,
+                            quiet = quiet),
+          error = function(c) c)))
     sink()
   } else {
-    stime <- system.time(res <- render_safely(subfile,
-                                              rmarkdown::html_document(),
-                                              output_dir = dirname(subfile),
-                                              ##knit_root_dir = dirname(subfile),
-                                              quiet = quiet))
+    res <- tryCatch(rmarkdown::render(subfile,
+                                      rmarkdown::html_document(),
+                                  ## output_dir = dirname(subfile),
+                                      ## knit_root_dir = dirname(subfile),
+                                      envir = env,
+                                      quiet = TRUE),
+                    error = function(c) c)
   }
+  stime <- (proc.time() - ptm1)[["elapsed"]]
+  ##stime <- 0L
+  iserr <- inherits(res, "error") || inherits(res, "simpleError")
 
   dplyr::bind_cols(
-    tibble::tibble(filename = subfile,
-                   html = if (is.null(res$result)) "" else res$result,
-                   ctime = stime[["user.self"]],
-                   err = list(res$error)),
-    blist)
+           tibble::tibble(filename = subfile,
+                          html = if (iserr) "" else res,
+                          ctime = stime,
+                          err = if (iserr) list(res) else list(NULL)),
+           blist)
 }
 
 #' Compile all RMarkdown submissions
 #'
-#' @param subdir subdirectory containing RMarkdown submissions
+#' @param subs character vector of submission file names
 #' @param quiet suppress messages while compiling
 #' @param blacklist comment out lines of code containing blacklisted functions
 #' @param progress report file-by-file progress
@@ -263,21 +279,21 @@ compile_assignment <- function(subfile,
 #' @details Convenience function to call \code{\link{compile_assignment}} repeatedly for each RMarkdown file in subdirectory \code{subdir}
 #' @importFrom magrittr %>%
 #' @export
-compile_all <- function(subdir,
+compile_all <- function(subs,
                         quiet = TRUE,
                         blacklist = TRUE,
                         progress = TRUE,
                         with_moodle_id = FALSE) {
-  
-  subs <- list_submissions(subdir)
 
+  env = parent.frame()
+  
   rtbl <- purrr::map2_df(subs, seq_along(subs), function(x, i) {
     if (progress) {
       msg1 <- sprintf("Compiling %d of %d (%s)", i, length(subs),
                       if (with_moodle_id) as.character(moodle_id(x)) else x)
       message(msg1)
     }
-    compile_assignment(x, quiet, blacklist)
+    compile_assignment(x, quiet, blacklist, env)
   })
 
   if (with_moodle_id) {
