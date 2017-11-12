@@ -77,6 +77,9 @@ browse_assessment <- function(x) {
           dplyr::arrange(sort_str, sub_id) %>%
           dplyr::select(-sort_str)
         ##browser()
+        if (is.null(ares_task[["html"]])) {
+          ares_task[["html"]] <- rep("", length(ares_task[["sub_id"]]))
+        }
         shiny::renderUI({
           ilist <- purrr::pmap(list(ares_task[["sub_id"]],
                                     ares_task[["code"]],

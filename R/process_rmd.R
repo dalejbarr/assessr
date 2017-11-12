@@ -142,11 +142,13 @@ apply_blacklist <- function(subfile) {
   ## TODO: something with the inline code
   inline <- grep("`r .+`", lines)
   msg <- paste0("Malformed RMarkdown file ", subfile, " :\n   ")
+  skip <- FALSE
   if ((length(chunk_0) != length(chunk_1)) || (length(chunk_0) == 0)) {
+    skip <- TRUE
     if (length(chunk_0) == 0) {
-      stop(msg, "No chunks found.")
+      warning(msg, "No chunks found.")
     } else {
-      stop(msg, "File contains ", length(chunk_0),
+      warning(msg, "File contains ", length(chunk_0),
            " markups for starting chunks, ",
            "but ", length(chunk_1), " markups for ending chunks.")
     }
@@ -228,11 +230,16 @@ compile_assignment <- function(subfile,
     stime <- system.time(
       suppressMessages(
         res <- render_safely(subfile,
-                             rmarkdown::html_document(), quiet = quiet)))
+                             rmarkdown::html_document(),
+                             output_dir = dirname(subfile),
+                             knit_root_dir = dirname(subfile),
+                             quiet = quiet)))
     sink()
   } else {
     stime <- system.time(res <- render_safely(subfile,
                                               rmarkdown::html_document(),
+                                              output_dir = dirname(subfile),
+                                              knit_root_dir = dirname(subfile),
                                               quiet = quiet))
   }
 
