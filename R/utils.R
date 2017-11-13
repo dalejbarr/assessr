@@ -56,13 +56,13 @@ are_num_vals_close <- function(valname, sol_env, ignore.case = FALSE,
     }
   }
   if (!exists(obj, envir = parent.frame(), inherit = FALSE)) {
-    add_feedback(paste0("* you did not define `", valname, "`",
-                        add = add))
+    add_feedback(paste0("* you did not define `", valname, "`"),
+                        add = add)
   } else {
     sub_val <- get(obj, envir = parent.frame(), inherits = FALSE)
     compare_vals <- TRUE
     if (inherits(sub_val, "data.frame")) {
-      add_feedback(paste0("* `", valname, "` should be a single value, not a table", add = add))
+      add_feedback(paste0("* `", valname, "` should be a single value, not a table"), add = add)
       if (nrow(sub_val) == 1) {
         ## find the numeric columns and compare them all
         lgl_ix <- purrr::map_lgl(sub_val, is.numeric)
@@ -190,7 +190,7 @@ same_col_names <- function(subtbl,
   sol_tbl <- get(soltbl, envir = sol_env)
   if (!is.null(sub_tbl <- safe_get_table(subtbl, parent.frame(), add))) {
     if (!(res <- setequal(colnames(sub_tbl), colnames(sol_tbl)))) {
-      add_feedback(paste0("* `", tblname, "` did not have the same column names as solution table", add = add))
+      add_feedback(paste0("* `", tblname, "` did not have the same column names as solution table"), add = add)
     }
   }
   res
@@ -265,8 +265,8 @@ has_columns <- function(subtbl, subcols, add = TRUE) {
 safe_get_table <- function(tblname, env, add = TRUE) {
   res <- NULL
   if (!exists(tblname, envir = env, inherits = FALSE)) {
-    add_feedback(paste0("* you did not define `", tblname, "` (your code failed because of an error, or you renamed variables given to you)",
-                        add = add))
+    add_feedback(paste0("* you did not define `", tblname, "` (your code failed because of an error, or you renamed variables given to you)"),
+                        add = add)
   } else {
     res <- get(tblname, envir = env, inherits = FALSE)
     if (!inherits(res, "data.frame")) {

@@ -9,6 +9,7 @@
 #' @importFrom magrittr %>%
 #' @export
 feedback_report <- function(d,
+                            filename,
                             template,
                             subdir = "feedback_reports",
                             overwrite = FALSE,
@@ -17,7 +18,7 @@ feedback_report <- function(d,
     stop("'subdir' cannot be an empty string")
   }
   fulldir <- file.path(sub("/+$", "", subdir), # trailing /
-                       sub("(^.+/|^\\.$)", "", dirname(d$filename[1])))
+                       sub("(^.+/|^\\.$)", "", dirname(filename)))
   if (dir.exists(fulldir)) {
     if (!overwrite) {
       stop("'", fulldir, "' exists and 'overwrite' is FALSE")
