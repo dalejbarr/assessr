@@ -135,11 +135,12 @@ assess_submission <- function(filename, sub_id = filename, key,
     ## now any intervening blocks will have run
 
     ## create the list to contain assessment params
-    assign("._ar", list(), sub_env)
+    assign("._ar", list(), envir = this_env)
     ## copy the solution environment over to this_env
-    assign("._ar$sol", key[["sol_env"]][[x]], envir = this_env)
+    assign("._as", key[["sol_env"]][[x]], envir = this_env)
+
     ff <- safely_assess_task(sub_id, x, sub_chunks,
-                             key[["a_code"]][[x]], this_env, use_sub_env)
+                      key[["a_code"]][[x]], this_env, use_sub_env)
     if (!is.null(ff[["error"]])) {
       setwd(oldwd)
       stop(ff[["error"]][["message"]])
@@ -154,7 +155,7 @@ assess_submission <- function(filename, sub_id = filename, key,
     tidyr::unnest() %>%
       dplyr::mutate(sub_id = sub_id, filename = filename,
                     code = sub_chunks[key[["task"]]]) %>%
-      select(sub_id, task, vars:fbk, err, code, filename)
+      dplyr::select(sub_id, task, vars:fbk, err, code, filename)
 }
 
 #' Assess individual task
@@ -182,8 +183,8 @@ assess_task <- function(sub_id, task, codelist, a_code,
   } else {
     sub_env <- orig_env
   }
-  assign("._ar$result", list(), sub_env)
-  assign("._ar$code", sub_code, sub_env)
+  assign("._ar", list(), sub_env)
+  assign("._ac", sub_code, sub_env)
   fig <- ""
 
   ## need add_feedback() in the environment
@@ -250,7 +251,7 @@ assess_task <- function(sub_id, task, codelist, a_code,
     stop("assessment code failed for ", sub_id, " task ", task, ":\n", msg)
   }
 
-  a_vars <- tibble::enframe(unlist(get("._result", sub_env)), "var", "value")
+  a_vars <- tibble::enframe(unlist(get("._ar", sub_env)), "var", "value")
 
   tibble::tibble(vars = list(a_vars),
                  fig = fig,

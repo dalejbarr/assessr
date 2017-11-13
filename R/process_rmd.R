@@ -104,7 +104,7 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
     
     if (ix <- purrr::detect_index(res, evaluate::is.error)) {
       setwd(oldwd)
-      stop(geterrmessage(res[[ix]]))
+      stop(conditionMessage(res[[ix]]))
     }
     lastenv <- this_env
     lastchunk <- to_run[length(to_run)]
