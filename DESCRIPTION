@@ -14,5 +14,7 @@ Imports: knitr,
     dplyr,
     base64enc,
     rmarkdown,
-    stringr
+    stringr,
+    getPass,
+    httr
 RoxygenNote: 6.0.1
