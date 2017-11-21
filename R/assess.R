@@ -139,8 +139,13 @@ assess_submission <- function(filename, sub_id = filename, key,
     ## copy the solution environment over to this_env
     assign("._as", key[["sol_env"]][[x]], envir = this_env)
 
+    ff <- list()
+    ## ff$result <- assess_task(sub_id, x, sub_chunks,
+    ##                         key[["a_code"]][[x]], this_env, use_sub_env)
+    ## ff$error <- NULL
+                      
     ff <- safely_assess_task(sub_id, x, sub_chunks,
-                      key[["a_code"]][[x]], this_env, use_sub_env)
+                             key[["a_code"]][[x]], this_env, use_sub_env)
     if (!is.null(ff[["error"]])) {
       setwd(oldwd)
       stop(ff[["error"]][["message"]])
@@ -155,7 +160,10 @@ assess_submission <- function(filename, sub_id = filename, key,
     tidyr::unnest() %>%
       dplyr::mutate(sub_id = sub_id, filename = filename,
                     code = sub_chunks[key[["task"]]]) %>%
-      dplyr::select(sub_id, task, vars:fbk, err, code, filename)
+      dplyr::select(sub_id, task, vars:fbk, err, code, filename) %>%
+      dplyr::mutate(fbk = map_chr(fbk, function(x) {
+        paste(unique(strsplit(x, "\n")[[1]]), collapse = "\n")
+      }))
 }
 
 #' Assess individual task

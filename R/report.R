@@ -5,6 +5,7 @@
 #' @param subdir the subdirectory for reports
 #' @param overwrite if exists, overwrite?
 #' @param quiet 'quiet' option for rmarkdown::render
+#' @param extra_params any extra parameters to pass to report (will appear in params$extra)
 #' @return path to the file
 #' @importFrom magrittr %>%
 #' @export
@@ -13,7 +14,8 @@ feedback_report <- function(d,
                             template,
                             subdir = "feedback_reports",
                             overwrite = FALSE,
-                            quiet = TRUE) {
+                            quiet = TRUE,
+                            extra_params = NULL) {
   if (subdir == "") {
     stop("'subdir' cannot be an empty string")
   }
@@ -43,6 +45,7 @@ feedback_report <- function(d,
                                                sum(value) > 0 ~ "Partial",
                                                TRUE ~ "None"))
   parms$ctbl <- credit_tbl
+  parms$extra <- extra_params
   
   html <- rmarkdown::render(template,
                             rmarkdown::pdf_document(),

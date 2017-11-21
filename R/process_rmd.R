@@ -52,8 +52,8 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
   if (any(grepl("___", tasks))) {
     stop("triple underscore '___' not allowed in code block names")
   }
-  ##curwd <- getwd()
-  ## setwd(working_dir)
+
+  ##browser()
   sol_chunks <- tangle(s_file)
   tasks_ix <- c(purrr::map_int(tasks, ~ which(names(sol_chunks) == .x)),
                 which(names(sol_chunks) == tasks[length(tasks)]) + 1L)
@@ -219,19 +219,27 @@ apply_blacklist <- function(subfile, overwrite = TRUE) {
 #' @param subfile path to submission RMarkdown file
 #' @param quiet whether to run quietly (suppress messages)
 #' @param blacklist comment out lines of code containing blacklisted functions
+#' @param fix_filename replace any spaces or brackets in the filename with underscores before rendering
 #' @details runs a safe version of \code{\link{rmarkdown::render}} on
 #'   the submision file
 #' @export
 compile_assignment <- function(subfile,
                                quiet = FALSE,
                                blacklist = TRUE,
-                               env = parent.frame()) {
+                               env = parent.frame(),
+                               fix_filename = TRUE) {
   if (blacklist) {
     blist <- apply_blacklist(subfile)
   } else {
     blist <- tibble::tibble(blacklist = NA, bfns = list(vector("character")))
   }
 
+  if (fix_filename) {
+    subfile_fix <- file.path(dirname(subfile), gsub("\\s|\\(|\\)", "_", basename(subfile)))
+    file.rename(subfile, subfile_fix)
+    subfile <- subfile_fix
+  }
+  
   ##browser()
   ptm1 <- proc.time()
   if (quiet) {
@@ -262,7 +270,7 @@ compile_assignment <- function(subfile,
 
   dplyr::bind_cols(
            tibble::tibble(filename = subfile,
-                          html = if (iserr) "" else res,
+                          html = if (iserr) "" else sub(file.path(getwd(), ""), "", res),
                           ctime = stime,
                           err = if (iserr) list(res) else list(NULL)),
            blist)

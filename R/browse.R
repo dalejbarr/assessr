@@ -36,7 +36,7 @@ browse_assessment <- function(x) {
   } else {
     stop("unrecognized argument for 'x'; must be a character string or tibble")
   }
-    
+  
   keep_cols <- setdiff(names(ares), c("sub_id", "task", "vars", "fbk"))
   orig_colorder <- names(ares)
   all_tasks <- unique(ares[["task"]])
@@ -55,16 +55,16 @@ browse_assessment <- function(x) {
   
   ## pull together to create the UI
   ui <- do.call(miniUI::miniPage,
-                 c(list(miniUI::gadgetTitleBar("Assessment Browser")),
+                c(list(miniUI::gadgetTitleBar("Assessment Browser")),
                   ts))  
 
   ui2 <- miniUI::miniPage(
-                  miniUI::gadgetTitleBar("Assessment B"),
-                  miniUI::miniTabstripPanel(id = "tabpanel",
-                                            miniUI::miniTabPanel(miniUI::miniContentPanel(shiny::uiOutput("t1"))),
-                                            miniUI::miniTabPanel(miniUI::miniContentPanel(shiny::uiOutput("t2")))
-                                            )
-                  )
+                   miniUI::gadgetTitleBar("Assessment B"),
+                   miniUI::miniTabstripPanel(id = "tabpanel",
+                                             miniUI::miniTabPanel(miniUI::miniContentPanel(shiny::uiOutput("t1"))),
+                                             miniUI::miniTabPanel(miniUI::miniContentPanel(shiny::uiOutput("t2")))
+                                             )
+                 )
   
   server <- function(input, output, session) {
     op <-
@@ -89,7 +89,13 @@ browse_assessment <- function(x) {
                                     ares_task[["html"]]),
                                function(x, y, z, v, f, h) {
                                  s1 <- list(shiny::hr(),
-                                            if (h == "") shiny::p(x) else shiny::actionButton(paste0("ab_", t, "_", x), x),
+                                            if (h == "") {
+                                              shiny::p(x)
+                                            } else {
+                                              shiny::a(x,
+                                                       href = paste0("file://", file.path(getwd(), h)),
+                                                       target = "_blank")
+                                            },
                                             ##ifelse(h != "",
                                             ##       shiny::a(href = h, x),
                                             ##       shiny::p(x)),
@@ -141,7 +147,7 @@ browse_assessment <- function(x) {
       ## cat(names(input), "\n")
       ## cat("*** tabpanel:", input$tabpanel, "\n\n")
     })
-        
+    
     shiny::observeEvent(input$done, {
       ## Process all the things and return the values
       ## browser()
@@ -149,47 +155,47 @@ browse_assessment <- function(x) {
       ff <- strsplit(ci_ix, "___") %>%
         purrr::transpose() %>%
         purrr::map(purrr::flatten_chr) %>%
-          purrr::modify_at(2, as.integer) %>%
-          `[`(-1)
-      names(ff) <- c("sub_id", "task", "var")
-
-      ## replace old with new values  
-      res <- tibble::as_tibble(ff) %>%
-        dplyr::mutate(value = purrr::map_lgl(ci_ix, ~ `[[`(input, .x)))
-      orig_data <- ares %>%
-        dplyr::select(sub_id, task, vars) %>%
-        tidyr::unnest()
-      new_vals <- dplyr::setdiff(res, orig_data)
-      vars <- dplyr::bind_rows(dplyr::anti_join(orig_data, new_vals,
-                                         c("sub_id", "task", "var")),
-                               new_vals) %>%
-        dplyr::group_by(sub_id, task) %>%
-        tidyr::nest(.key = "vars")
-
-      ## now do the same for feedback
-      fbk_ix <- grep("^fbk___[0-9]+___.*$", names(input), value = TRUE)
-      ff <- strsplit(fbk_ix, "___") %>%
-        purrr::transpose() %>%
-        purrr::map(purrr::flatten_chr) %>%
         purrr::modify_at(2, as.integer) %>%
         `[`(-1)
-      names(ff) <- c("sub_id", "task")
+        names(ff) <- c("sub_id", "task", "var")
 
-      fbk2 <- tibble::as_tibble(ff) %>%
-        dplyr::mutate(fbk = purrr::map_chr(fbk_ix, ~ `[[`(input, .x)))
-      orig_fbk <- ares[, c("sub_id", "task", "fbk")]
-      new_fbk <- dplyr::setdiff(fbk2, orig_fbk)
-      fbk3 <- dplyr::bind_rows(dplyr::anti_join(orig_fbk, new_fbk,
-                                                c("sub_id", "task")),
-                               new_fbk)
-      
-      ## combine into the master table and return
-      final <- dplyr::inner_join(ares[, c("sub_id", "task", keep_cols)],
-                                 vars, c("sub_id", "task")) %>%
-        dplyr::inner_join(fbk3, c("sub_id", "task")) %>%
-        dplyr::arrange(sub_id, task)
-                        
-      shiny::stopApp(final[, orig_colorder])
+        ## replace old with new values  
+        res <- tibble::as_tibble(ff) %>%
+          dplyr::mutate(value = purrr::map_lgl(ci_ix, ~ `[[`(input, .x)))
+        orig_data <- ares %>%
+          dplyr::select(sub_id, task, vars) %>%
+          tidyr::unnest()
+          new_vals <- dplyr::setdiff(res, orig_data)
+          vars <- dplyr::bind_rows(dplyr::anti_join(orig_data, new_vals,
+                                                    c("sub_id", "task", "var")),
+                                   new_vals) %>%
+            dplyr::group_by(sub_id, task) %>%
+            tidyr::nest(.key = "vars")
+
+          ## now do the same for feedback
+          fbk_ix <- grep("^fbk___[0-9]+___.*$", names(input), value = TRUE)
+          ff <- strsplit(fbk_ix, "___") %>%
+            purrr::transpose() %>%
+            purrr::map(purrr::flatten_chr) %>%
+            purrr::modify_at(2, as.integer) %>%
+            `[`(-1)
+            names(ff) <- c("sub_id", "task")
+
+            fbk2 <- tibble::as_tibble(ff) %>%
+              dplyr::mutate(fbk = purrr::map_chr(fbk_ix, ~ `[[`(input, .x)))
+            orig_fbk <- ares[, c("sub_id", "task", "fbk")]
+            new_fbk <- dplyr::setdiff(fbk2, orig_fbk)
+            fbk3 <- dplyr::bind_rows(dplyr::anti_join(orig_fbk, new_fbk,
+                                                      c("sub_id", "task")),
+                                     new_fbk)
+            
+            ## combine into the master table and return
+            final <- dplyr::inner_join(ares[, c("sub_id", "task", keep_cols)],
+                                       vars, c("sub_id", "task")) %>%
+              dplyr::inner_join(fbk3, c("sub_id", "task")) %>%
+              dplyr::arrange(sub_id, task)
+            
+            shiny::stopApp(final[, orig_colorder])
     })
   }
   

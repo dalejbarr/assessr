@@ -1,19 +1,27 @@
 #' Test whether a variable was defined statically or using code
 #'
 #' @param x name of the variable to check
+#' @param ignore_case whether to ignore case of \code{x}
 #' @param add whether to add feedback
 #' @return logical; \code{TRUE} if the code defining the variable uses any function
 #' @export
-defined_with_code <- function(x, code, add = TRUE) {
+defined_with_code <- function(x, code, ignore_case = FALSE, add = TRUE) {
   res <- FALSE
-  code2 <- strsplit(code, "\n")[[1]] %>% remove_comments()
-  ix <- grep(paste0("^", x, "[^[:alnum:]_]"), code2, ignore.case = TRUE)
+  ##browser()
+  code2 <- code %>% remove_comments()
+  code_head <- paste0("(^|.*;)\\s*(", x, "\\s*)(<-|=)")
+  ix <- grep(code_head, code2,
+             ignore.case = ignore_case)
+  ##stop(paste(code2, collapse = "\n"))
   if (length(ix)) {
-    code3 <- paste(code2[ix:length(code2)], collapse = "\n")
-    if (grepl("[A-Za-z]+\\s{0,1}\\(", code3)) {
+    code3 <- paste(code2[ix[length(ix)]:length(code2)], collapse = "\n")
+    ## TODO: remove anything preceding
+    code4 <- as.character(parse(text = sub(code_head, "\\2\\3", code3))[1])
+    ## if (grepl("[A-Za-z]+\\s{0,1}\\(", code4)) {
+    if (!grepl(paste0(code_head, "\\s*[0-9]"), code4)) {
       res <- TRUE
     } else {
-      add_feedback("* write *code* to generate the solution; writing the answer may be wrong if underlying data changes", add = add)
+      add_feedback("* write *code* to generate the solution; writing a numeric answer may become wrong if underlying data changes", add = add)
     }
   }
   res
@@ -110,9 +118,9 @@ are_tables_identical <- function(subtbl,
       }
     }
     if (!dplyr::setequal(sol2, sub2)) {
-      add_feedback("* your table `", tblname, "` differs from the solution table; see solution code", add = add)
+      add_feedback("* your table `", subtbl, "` differs from the solution table; see solution code", add = add)
     } else {
-      add_feedback("* your table `", tblname, "` matched the solution table",
+      add_feedback("* your table `", subtbl, "` matched the solution table",
                    add = add)
       res <- TRUE
     }
@@ -292,4 +300,33 @@ get_err_string <- function(x) {
         sep = "", file = f)
   else cat("<", cl, ": ", msg, ">\n", sep = "", file = f)
   paste(readLines(f), collapse = "\n")
+}
+
+#' Are objects identical
+#'
+#' @param subobj name of submission object
+#' @param sol_env solution environment
+#' @param add add feedback
+#' @return logical
+#' @details use this to compare any two objects (e.g., fitted model objects resulting from a call to `lm()`, `aov()`, etc)
+#' @export
+are_objects_identical <- function(subobj,
+                                  sol_env,
+                                  add = TRUE) {
+  res <- FALSE
+  sol_obj <- get(subobj, envir = sol_env)
+  if (!exists(subobj, envir = parent.frame(), inherits = FALSE)) {
+    add_feedback("* object `", subobj, "` was not defined; check spelling/capitalization",
+                 add = add)
+  } else {
+    sub_obj <- get(subobj, envir = parent.frame(), inherits = FALSE)
+    if (!identical(class(sub_obj), class(sol_obj))) {
+      add_feedback("* object `", subobj, "` was of incorrect type; was of class `",
+                   paste(class(sub_obj), collapse = ", "), "` but should have been `",
+                   paste(class(sol_obj), collapse = ", "), "`")
+    } else {
+      res <- TRUE
+    }
+  }
+  res
 }
