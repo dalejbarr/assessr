@@ -37,6 +37,8 @@ remove_comments <- function(x) {
   res[res != ""]
 }
 
+
+
 #' Are submission and solution numeric values close
 #'
 #' Test whether numeric values in the submission are close to corresponding values in the solution environment.
@@ -79,13 +81,24 @@ are_num_vals_close <- function(valname, sol_env, ignore.case = FALSE,
           res["vals_match"] <- any((vec - sol_val) < tolerance)
         }
       }
-    } else {
-      res["is_single_val"] <- TRUE
+    } else if (is.vector(sub_val)) {
+      if (length(sub_val) == 1L) {
+        res["is_single_val"] <- TRUE
+      } else {
+        add_feedback("* `", valname, "` was not a single value; comparing first element to solution")
+        sub_val <- sub_val[1]
+      }
       if (!is.numeric(sub_val)) {
         add_feedback("* `", valname, "` was not numeric", add = add)
       } else {
-        res["vals_match"] <- abs(sub_val - sol_val) < tolerance
+        if (is.nan(sub_val) || is.infinite(sub_val)) {
+          add_feedback("* `", valname, "` was `NaN`, `+Inf`, or `-Inf`", add = add)
+        } else {
+          res["vals_match"] <- abs(sub_val - sol_val) < tolerance
+        }
       }
+    } else {
+      add_feedback("* `", valname, "` was not a vector", add = add)
     }
   }
   res
