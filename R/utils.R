@@ -43,36 +43,38 @@ remove_comments <- function(x) {
 #'
 #' Test whether numeric values in the submission are close to corresponding values in the solution environment.
 #'
-#' @param valname Name of the variable whose value you want to test
+#' @param subvar Name of the submission variable whose value you want to test
 #' @param sol_env solution environment
+#' @param solvar Name of the solution variable to test against
 #' @param ignore.case whether to accept same variable name but different capitalization
 #' @param tolerance how close the values have to be
 #' @param add whether to add feedback
 #' @return logical; \code{TRUE} if \code{abs(x - get(x, sol_env)) < tolerance}
 #' @export
-are_num_vals_close <- function(valname, sol_env, ignore.case = FALSE,
+are_num_vals_close <- function(subvar, sol_env, solvar = subvar,
+                               ignore.case = FALSE,
                                tolerance = .002, add = TRUE) {
   ##browser()
   res <- c("is_single_val" = FALSE,
            "vals_match" = FALSE)
 
-  sol_val <- get(valname, envir = sol_env)
-  obj <- valname
+  sol_val <- get(solvar, envir = sol_env)
+  obj <- subvar
   if (ignore.case) {
-    obj <- grep(paste0("^", valname, "$"),
+    obj <- grep(paste0("^", subvar, "$"),
                 ls(parent.frame()), ignore.case = TRUE, value = TRUE)
     if (length(obj) != 1) {
-      obj <- valname # cancel
+      obj <- subvar # cancel
     }
   }
   if (!exists(obj, envir = parent.frame(), inherit = FALSE)) {
-    add_feedback(paste0("* you did not define `", valname, "`"),
+    add_feedback(paste0("* you did not define `", subvar, "`"),
                         add = add)
   } else {
     sub_val <- get(obj, envir = parent.frame(), inherits = FALSE)
     compare_vals <- TRUE
     if (inherits(sub_val, "data.frame")) {
-      add_feedback(paste0("* `", valname, "` should be a single value, not a table"), add = add)
+      add_feedback(paste0("* `", subvar, "` should be a single value, not a table"), add = add)
       if (nrow(sub_val) == 1) {
         ## find the numeric columns and compare them all
         lgl_ix <- purrr::map_lgl(sub_val, is.numeric)
@@ -85,20 +87,20 @@ are_num_vals_close <- function(valname, sol_env, ignore.case = FALSE,
       if (length(sub_val) == 1L) {
         res["is_single_val"] <- TRUE
       } else {
-        add_feedback("* `", valname, "` was not a single value; comparing first element to solution")
+        add_feedback("* `", subvar, "` was not a single value; comparing first element to solution")
         sub_val <- sub_val[1]
       }
       if (!is.numeric(sub_val)) {
-        add_feedback("* `", valname, "` was not numeric", add = add)
+        add_feedback("* `", subvar, "` was not numeric", add = add)
       } else {
         if (is.nan(sub_val) || is.infinite(sub_val)) {
-          add_feedback("* `", valname, "` was `NaN`, `+Inf`, or `-Inf`", add = add)
+          add_feedback("* `", subvar, "` was `NaN`, `+Inf`, or `-Inf`", add = add)
         } else {
           res["vals_match"] <- abs(sub_val - sol_val) < tolerance
         }
       }
     } else {
-      add_feedback("* `", valname, "` was not a vector", add = add)
+      add_feedback("* `", subvar, "` was not a vector", add = add)
     }
   }
   res
@@ -164,6 +166,34 @@ fn_regex <- function(fname) {
 #' @export
 code_includes <- function(fn, code) {
   any(grepl(fn_regex(fn), remove_comments(code)))
+}
+
+#' Same number of rows in table
+#'
+#' @param subtbl name of table in submission environment
+#' @param sol_env solution environment
+#' @param soltbl name of table in solution environment
+#' @param add whether to add feedback
+#' @return logical
+#' @export
+tbl_has_same_nrows <- function(subtbl, sol_env,
+                           soltbl = subtbl,
+                           add = TRUE) {
+  res <- FALSE
+  sol_tbl <- get(soltbl, envir = sol_env)
+  if (!is.null(sub_tbl <- safe_get_table(subtbl, parent.frame(), add))) {
+    if (length(dim(sub_tbl)) != length(dim(sol_tbl))) {
+      add_feedback(paste0("* `", tblname, "` was not a table"), add = add)
+    } else {
+      res <- nrow(sub_tbl) == nrow(sol_tbl)
+      if (!res) {
+        add_feedback("* `", tblname, "` had ", nrow(sub_tbl),
+                     " rows; should have had ", nrow(sol_tbl), " rows.",
+                     add = add)
+      }
+    }
+  }    
+  res  
 }
 
 #' Are table dimensions the same
