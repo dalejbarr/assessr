@@ -4,7 +4,8 @@
 \alias{compile_assignment}
 \title{Compile assignment report}
 \usage{
-compile_assignment(subfile, quiet = FALSE, blacklist = TRUE)
+compile_assignment(subfile, quiet = FALSE, blacklist = TRUE,
+  env = parent.frame(), fix_filename = TRUE)
 }
 \arguments{
 \item{subfile}{path to submission RMarkdown file}
@@ -12,6 +13,8 @@ compile_assignment(subfile, quiet = FALSE, blacklist = TRUE)
 \item{quiet}{whether to run quietly (suppress messages)}
 
 \item{blacklist}{comment out lines of code containing blacklisted functions}
+
+\item{fix_filename}{replace any spaces or brackets in the filename with underscores before rendering}
 }
 \description{
 Safely compile assignment report from submitted RMarkdown script

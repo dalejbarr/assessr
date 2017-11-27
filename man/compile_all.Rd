@@ -4,11 +4,11 @@
 \alias{compile_all}
 \title{Compile all RMarkdown submissions}
 \usage{
-compile_all(subdir, quiet = TRUE, blacklist = TRUE, progress = TRUE,
+compile_all(subs, quiet = TRUE, blacklist = TRUE, progress = TRUE,
   with_moodle_id = FALSE)
 }
 \arguments{
-\item{subdir}{subdirectory containing RMarkdown submissions}
+\item{subs}{character vector of submission file names}
 
 \item{quiet}{suppress messages while compiling}
 

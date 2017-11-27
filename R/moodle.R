@@ -99,7 +99,6 @@ set_moodle_credentials <- function(url = NULL,
 #' @param overwrite overwrite the subdirectory if it exists (default \code{FALSE})
 #' @param url URL of moodle server (if not specified in credential file)
 #' @param user name of moodle user (if not specified in credential file)
-#' @details 
 #' @return a tibble containing information about contents of the downloaded directory (see \code{\link{list_submissions}})
 #' @seealso \code{\link{login}}, \code{\link{rmdassess::describe}}
 #' @export

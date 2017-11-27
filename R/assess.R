@@ -115,9 +115,12 @@ assess_submission <- function(filename, sub_id = filename, key,
           chk_todo <- setdiff(seq(chk_ix_pre, code_cur, 1L),
                               c(chk_ix_pre, code_cur))
           purrr::walk(chk_todo, function(nx) {
+            imgfile <- tempfile()
+            png(imgfile)
             result <- evaluate::evaluate(sub_chunks[[nx]],
                                          this_env,
                                          new_device = FALSE)
+            dev.off()
             ## check for errors
             errs <- purrr::map_lgl(result, evaluate::is.error)
             if (any(errs)) {

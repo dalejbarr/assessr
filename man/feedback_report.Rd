@@ -4,8 +4,8 @@
 \alias{feedback_report}
 \title{Produce a feedback report}
 \usage{
-feedback_report(d, template, subdir = "feedback_reports", overwrite = FALSE,
-  quiet = TRUE)
+feedback_report(d, filename, template, subdir = "feedback_reports",
+  overwrite = FALSE, quiet = TRUE, extra_params = NULL)
 }
 \arguments{
 \item{d}{a table with assessment data for a single submission}
@@ -17,6 +17,8 @@ feedback_report(d, template, subdir = "feedback_reports", overwrite = FALSE,
 \item{overwrite}{if exists, overwrite?}
 
 \item{quiet}{'quiet' option for rmarkdown::render}
+
+\item{extra_params}{any extra parameters to pass to report (will appear in params$extra)}
 }
 \value{
 path to the file

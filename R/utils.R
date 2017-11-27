@@ -1,3 +1,16 @@
+#' Vectorized version of all.equal
+#'
+#' @param x vector whose elements you want to compare
+#' @param y vector whose elements you want to compare to x
+#' @details performs element-by-element comparison, dealing properly
+#'   with floating-point values
+#' @export
+`%==%` <- function(x, y) {
+  mapply(function(x1, y1) {
+    isTRUE(all.equal(x1, y1))
+  }, x, y, USE.NAMES = FALSE)
+}
+
 #' Test whether a variable was defined statically or using code
 #'
 #' @param x name of the variable to check
@@ -5,7 +18,7 @@
 #' @param add whether to add feedback
 #' @return logical; \code{TRUE} if the code defining the variable uses any function
 #' @export
-defined_with_code <- function(x, code, ignore_case = FALSE, add = TRUE) {
+def_by_code <- function(x, code, ignore_case = FALSE, add = TRUE) {
   res <- FALSE
   ##browser()
   code2 <- code %>% remove_comments()
@@ -51,9 +64,9 @@ remove_comments <- function(x) {
 #' @param add whether to add feedback
 #' @return logical; \code{TRUE} if \code{abs(x - get(x, sol_env)) < tolerance}
 #' @export
-are_num_vals_close <- function(subvar, sol_env, solvar = subvar,
-                               ignore.case = FALSE,
-                               tolerance = .002, add = TRUE) {
+num_vals_close <- function(subvar, sol_env, solvar = subvar,
+                           ignore.case = FALSE,
+                           tolerance = .002, add = TRUE) {
   ##browser()
   res <- c("is_single_val" = FALSE,
            "vals_match" = FALSE)
@@ -115,11 +128,11 @@ are_num_vals_close <- function(subvar, sol_env, solvar = subvar,
 #' @param add whether to add feedback
 #' @return logical; returns result of \code{dplyr::setequal(tblname, get(tblname, sol_env))}
 #' @export
-are_tables_identical <- function(subtbl, 
-                                 sol_env,
-                                 soltbl = subtbl,
-                                 ignore.case = FALSE,
-                                 add = TRUE) {
+tbls_identical <- function(subtbl, 
+                           sol_env,
+                           soltbl = subtbl,
+                           ignore.case = FALSE,
+                           add = TRUE) {
   res <- FALSE
   sol_tbl <- get(soltbl, envir = sol_env)
   if (!is.null(sub_tbl <- safe_get_table(subtbl, parent.frame(), add))) {
@@ -247,7 +260,7 @@ same_col_names <- function(subtbl,
   res
 }
 
-#' Are table column values identical
+#' Are table column values equal
 #'
 #' @param subtbl name of submission table
 #' @param subcol name of column in submission table
@@ -256,14 +269,15 @@ same_col_names <- function(subtbl,
 #' @param solcol name of column in solution table
 #' @param ignore_order should the ordering of the values be ignored?
 #' @param add whether to add feedback
+#' @details uses \code{\link{all.equal}} to deal with floating point values
 #' @return logical
 #' @export
-are_columns_identical <- function(subtbl, subcol,
-                                  sol_env,
-                                  soltbl = subtbl,
-                                  solcol = subcol,
-                                  ignore_order = TRUE,
-                                  add = TRUE) {
+tbl_cols_equal <- function(subtbl, subcol,
+                           sol_env,
+                           soltbl = subtbl,
+                           solcol = subcol,
+                           ignore_order = TRUE,
+                           add = TRUE) {
   ##browser()
   res <- FALSE
   sol_tbl <- get(soltbl, envir = sol_env)
@@ -274,15 +288,19 @@ are_columns_identical <- function(subtbl, subcol,
                    subtbl, "`", add = add)
     } else {
       if (ignore_order) {
-        res <- identical(sort(sub_tbl[[subcol]]),
-                         sort(sol_tbl[[solcol]]))
+        res <- isTRUE(all.equal(sort(sub_tbl[[subcol]]),
+                                sort(sol_tbl[[solcol]])))
       } else {
-        res <- identical(sub_tbl[[subcol]],
-                         sol_tbl[[solcol]])
+        res <- isTRUE(all.equal(sub_tbl[[subcol]],
+                                sol_tbl[[solcol]]))
       }
       if (!res) {
         add_feedback("* values or data type for column `", subcol,
                      "` in `", subtbl, "` were incorrect",
+                     add = add)
+      } else {
+        add_feedback("* values in column `", subcol, "` of `", subtbl,
+                     "` matched corresponding values in solution table",
                      add = add)
       }
     }
@@ -353,22 +371,24 @@ get_err_string <- function(x) {
 #' @return logical
 #' @details use this to compare any two objects (e.g., fitted model objects resulting from a call to `lm()`, `aov()`, etc)
 #' @export
-are_objects_identical <- function(subobj,
-                                  sol_env,
-                                  add = TRUE) {
+objs_identical <- function(subobj,
+                           sol_env,
+                           add = TRUE) {
   res <- FALSE
   sol_obj <- get(subobj, envir = sol_env)
   if (!exists(subobj, envir = parent.frame(), inherits = FALSE)) {
-    add_feedback("* object `", subobj, "` was not defined; check spelling/capitalization",
+    add_feedback("* object `", subobj,
+                 "` was not defined; check spelling/capitalization",
                  add = add)
   } else {
     sub_obj <- get(subobj, envir = parent.frame(), inherits = FALSE)
     if (!identical(class(sub_obj), class(sol_obj))) {
       add_feedback("* object `", subobj, "` was of incorrect type; was of class `",
                    paste(class(sub_obj), collapse = ", "), "` but should have been `",
-                   paste(class(sol_obj), collapse = ", "), "`")
+                   paste(class(sol_obj), collapse = ", "), "`", add = add)
     } else {
       res <- TRUE
+      add_feedback("* `", subobj, "` matched solution", add = add)
     }
   }
   res

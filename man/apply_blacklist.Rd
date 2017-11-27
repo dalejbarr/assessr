@@ -2,18 +2,21 @@
 % Please edit documentation in R/process_rmd.R
 \name{apply_blacklist}
 \alias{apply_blacklist}
-\title{Remove blacklisted functions}
+\title{Check for blacklisted functions}
 \usage{
-apply_blacklist(subfile)
+apply_blacklist(subfile, overwrite = TRUE)
 }
 \arguments{
 \item{subfile}{path to submission RMarkdown file}
+
+\item{overwrite}{if you want to comment out the lines from the original file}
 }
 \value{
 a tibble with columns \code{blacklist}, whether any functions were found; and \code{bfns}, names of these functions
 }
 \description{
-Comment out any blacklisted functions that appear within a file
+Search for, and optionally comment out any blacklisted functions
+that appear within an RMarkdown file
 }
 \details{
 warning: the original file will be overwritten, with any
