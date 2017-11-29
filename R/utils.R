@@ -196,11 +196,11 @@ tbl_same_nrows <- function(subtbl, sol_env,
   sol_tbl <- get(soltbl, envir = sol_env)
   if (!is.null(sub_tbl <- safe_get_table(subtbl, parent.frame(), add))) {
     if (length(dim(sub_tbl)) != length(dim(sol_tbl))) {
-      add_feedback(paste0("* `", tblname, "` was not a table"), add = add)
+      add_feedback(paste0("* `", subtbl, "` was not a table"), add = add)
     } else {
       res <- nrow(sub_tbl) == nrow(sol_tbl)
       if (!res) {
-        add_feedback("* `", tblname, "` had ", nrow(sub_tbl),
+        add_feedback("* `", subtbl, "` had ", nrow(sub_tbl),
                      " rows; should have had ", nrow(sol_tbl), " rows.",
                      add = add)
       }
@@ -224,11 +224,11 @@ tbl_same_dims <- function(subtbl,
   sol_tbl <- get(soltbl, envir = sol_env)
   if (!is.null(sub_tbl <- safe_get_table(subtbl, parent.frame(), add))) {
     if (length(dim(sub_tbl)) != length(dim(sol_tbl))) {
-      add_feedback(paste0("* `", tblname, "` was not a table"), add = add)
+      add_feedback(paste0("* `", subtbl, "` was not a table"), add = add)
     } else {
       res <- identical(dim(sub_tbl), dim(sol_tbl))
       if (!res) {
-        add_feedback(paste0("* `", tblname, "` should have been ",
+        add_feedback(paste0("* `", subtbl, "` should have been ",
                             dim(sol_tbl)[1], "x", dim(sol_tbl)[2],
                             "; yours was ",
                             dim(sub_tbl)[1], "x", dim(sub_tbl)[1]),
@@ -254,7 +254,7 @@ tbl_same_colnames <- function(subtbl,
   sol_tbl <- get(soltbl, envir = sol_env)
   if (!is.null(sub_tbl <- safe_get_table(subtbl, parent.frame(), add))) {
     if (!(res <- setequal(colnames(sub_tbl), colnames(sol_tbl)))) {
-      add_feedback(paste0("* `", tblname, "` did not have the same column names as solution table"), add = add)
+      add_feedback(paste0("* `", subtbl, "` did not have the same column names as solution table"), add = add)
     }
   }
   res
@@ -315,7 +315,7 @@ tbl_cols_equal <- function(subtbl, subcol,
 #' @param add whether to give feedback
 #' @return logical
 #' @export
-has_columns <- function(subtbl, subcols, add = TRUE) {
+tbl_has_cols <- function(subtbl, subcols, add = TRUE) {
   res <- FALSE
   if (!is.null(sub_tbl <- safe_get_table(subtbl, parent.frame(), add))) {
     nvec <- setdiff(subcols, colnames(sub_tbl))
@@ -342,6 +342,22 @@ safe_get_table <- function(tblname, env, add = TRUE) {
       add_feedback(paste0("* `", tblname, "` was not a table"), add = add)
       res <- NULL
     }
+  }
+  res
+}
+
+#' Are all column values unique?
+#'
+#' @param subtbl name of submission table
+#' @param subcol name of submission column
+#' @return logical
+all_col_vals_unique <- function(subtbl, subcol, add = TRUE) {
+  res <- FALSE
+  d <- safe_get_table(subtbl, parent.frame(), add)
+  if (!is.null(d)) {
+    res <- length(unique(d[[subcol]])) == length(d[[subcol]])
+  } else {
+    add_feedback("* all values in column `", subcol, "` should be unique", add = add)
   }
   res
 }
@@ -393,6 +409,51 @@ objs_identical <- function(subobj,
       } else {
         add_feedback("* `", subobj, "` did not match solution", add = add)
       }
+    }
+  }
+  res
+}
+
+#' Safely try out a function defined in the submission
+#'
+#' @param fnname name of the function
+#' @param add whether to add feedback
+#' @param ... arguments to fnname
+#' @return list with two values: \code{is_error} (logical) and \code{result}
+fun_try <- function(fnname, ..., add = TRUE) {
+  res <- list(error = TRUE, result = NULL)
+  if (!exists(fnname, envir = parent.frame(), inherits = FALSE)) {
+    add_feedback("* you didn't define the function `", fnname,"` (check capitalization and spelling)")
+  } else {
+    fres <- tryCatch(do.call(fnname, list(...)), error = function(e) e)
+    if (evaluate::is.error(fres)) {
+      res$error <- TRUE
+      res$result <- NULL
+      add_feedback("* could not run your function `", fnname, "`; it threw an error", add = TRUE)
+    } else {
+      res$error <- FALSE
+      res$result <- fres
+    }
+  }
+  res
+}
+
+
+#' Does function exist in submission environment?
+#'
+#' @param fnname name of function
+#' @param add add feedback? (logical)
+#' @return logical
+fun_exists <- function(fnname, add = TRUE) {
+  res <- FALSE
+  if (!exists(fnname, envir = parent.frame(), inherits = FALSE)) {
+    add_feedback("* `", fnname, "` does not exist (check spelling and capitalization)", add = add)
+  } else {
+    ff <- get(fnname, envir = parent.frame(), inherits = FALSE)
+    if (!is.function(ff)) {
+      add_feedback("* `", fnname, "` is not a function", add = add)
+    } else {
+      res = TRUE
     }
   }
   res
