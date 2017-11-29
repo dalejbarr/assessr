@@ -189,7 +189,7 @@ code_includes <- function(fn, code) {
 #' @param add whether to add feedback
 #' @return logical
 #' @export
-tbl_has_same_nrows <- function(subtbl, sol_env,
+tbl_same_nrows <- function(subtbl, sol_env,
                            soltbl = subtbl,
                            add = TRUE) {
   res <- FALSE
@@ -217,7 +217,7 @@ tbl_has_same_nrows <- function(subtbl, sol_env,
 #' @param add whether to add feedback
 #' @return logical
 #' @export
-same_tbl_dims <- function(subtbl,
+tbl_same_dims <- function(subtbl,
                           sol_env,
                           soltbl = subtbl, add = TRUE) {
   res <- FALSE
@@ -247,7 +247,7 @@ same_tbl_dims <- function(subtbl,
 #' @param add whether to add feedback
 #' @return logical
 #' @export
-same_col_names <- function(subtbl,
+tbl_same_colnames <- function(subtbl,
                            sol_env,
                            soltbl = subtbl, add = TRUE) {
   res <- FALSE
@@ -387,8 +387,12 @@ objs_identical <- function(subobj,
                    paste(class(sub_obj), collapse = ", "), "` but should have been `",
                    paste(class(sol_obj), collapse = ", "), "`", add = add)
     } else {
-      res <- TRUE
-      add_feedback("* `", subobj, "` matched solution", add = add)
+      res <- identical(sub_obj, sol_obj)
+      if (res) {
+        add_feedback("* `", subobj, "` matched solution", add = add)
+      } else {
+        add_feedback("* `", subobj, "` did not match solution", add = add)
+      }
     }
   }
   res
