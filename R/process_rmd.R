@@ -1,5 +1,14 @@
 knit_safely <- purrr::safely(knitr::knit)
 
+restore_search_path <- function(search_pre) {
+  ## restore the search path to its state before submission/key code was run
+  search_diff <- setdiff(search(), search_pre)
+  if (length(search_diff)) {
+    suppressWarnings(purrr::walk(grep("^package:", search_diff, value = TRUE),
+                                 detach, unload = TRUE, character.only = TRUE))
+  }
+}
+
 #' Tangle code from Rmd file
 #'
 #' Extract code blocks from RMarkdown file
@@ -47,6 +56,8 @@ tangle <- function(filename) {
 #' @export
 compile_key <- function(s_file, a_file, overwrite = FALSE,
                         workdir = NULL, save_fig = TRUE) {
+  search_pre <- search()
+  
   a_chunks <- tangle(a_file)
   tasks <- names(a_chunks)
   if (any(grepl("___", tasks))) {
@@ -116,6 +127,8 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
   solution_envs <- starting_env[-1]
   names(solution_envs) <- tasks
 
+  restore_search_path(search_pre)
+  
   tibble::tibble(task = tasks,
                  s_code = sol_chunks[tasks],
                  a_code = a_chunks[tasks],
@@ -228,6 +241,8 @@ compile_assignment <- function(subfile,
                                blacklist = TRUE,
                                env = parent.frame(),
                                fix_filename = TRUE) {
+  search_pre <- search()
+  
   if (blacklist) {
     blist <- apply_blacklist(subfile)
   } else {
@@ -268,6 +283,8 @@ compile_assignment <- function(subfile,
   ##stime <- 0L
   iserr <- inherits(res, "error") || inherits(res, "simpleError")
 
+  restore_search_path(search_pre)
+  
   dplyr::bind_cols(
            tibble::tibble(filename = subfile,
                           html = if (iserr) "" else sub(file.path(getwd(), ""), "", res),

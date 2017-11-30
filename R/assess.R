@@ -73,6 +73,8 @@ reset_feedback <- function() {
 #' @export
 assess_submission <- function(filename, sub_id = filename, key,
                               use_sub_env = TRUE, workdir = NULL) {
+  search_pre <- search()
+  
   sub_chunks <- tangle(filename)
   ix <- seq_along(key[["task"]])
   names(ix) <- key[["task"]]
@@ -159,12 +161,14 @@ assess_submission <- function(filename, sub_id = filename, key,
   setwd(oldwd)
   names(res) <- key[["task"]]
 
+  restore_search_path(search_pre)
+  
   tibble::enframe(res, "task") %>%
     tidyr::unnest() %>%
       dplyr::mutate(sub_id = sub_id, filename = filename,
                     code = sub_chunks[key[["task"]]]) %>%
       dplyr::select(sub_id, task, vars:fbk, err, code, filename) %>%
-      dplyr::mutate(fbk = map_chr(fbk, function(x) {
+      dplyr::mutate(fbk = purrr::map_chr(fbk, function(x) {
         paste(unique(strsplit(x, "\n")[[1]]), collapse = "\n")
       }))
 }
