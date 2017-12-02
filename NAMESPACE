@@ -3,7 +3,7 @@
 export("%==%")
 export(add_feedback)
 export(apply_blacklist)
-export(assess_submission)
+export(assess)
 export(assess_task)
 export(browse_assessment)
 export(code_includes)

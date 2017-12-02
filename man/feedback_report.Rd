@@ -10,6 +10,8 @@ feedback_report(d, filename, template, subdir = "feedback_reports",
 \arguments{
 \item{d}{a table with assessment data for a single submission}
 
+\item{filename}{filename of the submission}
+
 \item{template}{an RMarkdown template for the report}
 
 \item{subdir}{the subdirectory for reports}
@@ -21,7 +23,7 @@ feedback_report(d, filename, template, subdir = "feedback_reports",
 \item{extra_params}{any extra parameters to pass to report (will appear in params$extra)}
 }
 \value{
-path to the file
+path to the report
 }
 \description{
 Produce a feedback report

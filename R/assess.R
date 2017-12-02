@@ -71,7 +71,7 @@ reset_feedback <- function() {
 #' @param workdir the working directory in which to evaluate the code
 #' @return A table
 #' @export
-assess_submission <- function(filename, sub_id = filename, key,
+assess <- function(filename, sub_id = filename, key,
                               use_sub_env = TRUE, workdir = NULL) {
   search_pre <- search()
   
@@ -277,3 +277,33 @@ assess_task <- function(sub_id, task, codelist, a_code,
 }
 
 safely_assess_task <- purrr::safely(assess_task)
+
+#' Create an assessment code file
+#'
+#' Create an assessment code file based on solution
+#' 
+#' @param s_file name of file with solutions
+#' @return name of the output file
+assessment_code <- function(s_file, o_file = "assess_code.Rmd",
+                            overwrite = FALSE) {
+  if (file.exists(o_file) && !overwrite) {
+    stop("file '", o_file, "' exists and overwrite = FALSE")
+  }
+
+  s_code <- tangle(s_file)
+
+  ## create the file
+  append <- FALSE
+
+  purrr::walk(names(s_code), function(x) {
+    if (x == names(s_code)[[1]]) append <- FALSE else append <- TRUE
+    cat(rmd_chunk_stub(x, trailing = ""),
+        sep = "\n", file = o_file, append = append)
+  })
+
+  message("wrote ", length(s_code), " code chunk",
+          if (length(s_code) > 1) "s" else "",
+          " to file '", o_file, "'")
+
+  return(invisible(o_file))
+}

@@ -66,6 +66,20 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
 
   ##browser()
   sol_chunks <- tangle(s_file)
+  missing <- setdiff(tasks, names(sol_chunks))
+  if (length(missing)) {
+    if (length(missing) > 1) {
+      word <- "chunks"
+      verb <- "are"
+    } else {
+      word <- "chunk"
+      verb <- "is"
+    }
+    stop("assessment file has ", word, " ",
+         paste(paste0("'", missing, "'"), collapse = ", "),
+         " which ", verb, " missing from solution file")
+  }
+  
   tasks_ix <- c(purrr::map_int(tasks, ~ which(names(sol_chunks) == .x)),
                 which(names(sol_chunks) == tasks[length(tasks)]) + 1L)
   starting_env <- list()
