@@ -174,15 +174,22 @@ apply_blacklist <- function(subfile, overwrite = TRUE) {
     if (length(chunk_0) == 0) {
       warning(msg, "No chunks found.")
     } else {
-      warning(msg, "File contains ", length(chunk_0),
-              " markups for starting chunks, ",
-              "but ", length(chunk_1), " markups for ending chunks.")
-      new_c1 <- purrr::map_int(chunk_0, ~ min(chunk_1[chunk_1 > .x]))
-      if ((length(new_c1) - length(chunk_0)) == 1) {
-        new_c1 <- c(new_c1, length(lines) + 1L)
-        lines <- c(lines, "```")
+      if (length(chunk_1) < length(chunk_0)) {
+        warning(msg, "Too few code chunk ending delimiters (",
+                length(chunk_1), ")", " compared to starting delimiters (",
+                length(chunk_0), ")")
+        chunk_0 <- chunk_0[seq_along(chunk_1)]
+      } else {
+        warning(msg, "File contains ", length(chunk_0),
+                " markups for starting chunks, ",
+                "but ", length(chunk_1), " markups for ending chunks.")
+        new_c1 <- purrr::map_int(chunk_0, ~ min(chunk_1[chunk_1 > .x]))
+        if ((length(new_c1) - length(chunk_0)) == 1) {
+          new_c1 <- c(new_c1, length(lines) + 1L)
+          lines <- c(lines, "```")
+        }
+        chunk_1 <- new_c1
       }
-      chunk_1 <- new_c1
     }
   }
   fb_regx <- get_blacklist()[["regex"]]
@@ -269,7 +276,6 @@ compile_assignment <- function(subfile,
     subfile <- subfile_fix
   }
   
-  ##browser()
   ptm1 <- proc.time()
   if (quiet) {
     sink(tempfile())
@@ -334,15 +340,18 @@ compile_all <- function(subs,
     }
     compile_assignment(x, quiet, blacklist, env)
   })
-
+  
+  result <- NULL
   if (with_moodle_id) {
-    rtbl %>%
+    result <- rtbl %>%
       dplyr::mutate(sub_id = moodle_id(filename)) %>%
       dplyr::select(sub_id, ctime, err, blacklist, bfns, html, filename)
   } else {
-    rtbl %>%
+    result <- rtbl %>%
       dplyr::select(ctime, err, blacklist, bfns, html, filename)
   }
+  
+  return(result)
 }
 
 
