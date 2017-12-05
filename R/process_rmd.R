@@ -14,12 +14,16 @@ restore_search_path <- function(search_pre) {
 #' Extract code blocks from RMarkdown file
 #'
 #' @param filename name of Rmd file to tangle
+#' @param inline_code keep inline code?
+#' @param documentation see \code{\link{knitr::purl}}
 #' @return A list containing file blocks
 #' @export
-tangle <- function(filename) {
+tangle <- function(filename, inline_code = FALSE, documentation = 1L) {
   ofname <- tempfile(fileext = ".R")
   knitr:::knit_code$restore()
-  knitr::opts_knit$set(documentation = 1L)
+  old_opt <- options()$knitr.purl.inline
+  options(knitr.purl.inline = inline_code)
+  knitr::opts_knit$set(documentation = documentation)
   kresult <- knit_safely(filename, ofname, tangle = TRUE, quiet = TRUE)
   if (is.null(kresult[["error"]])) {
     knitr::read_chunk(ofname)
@@ -32,6 +36,8 @@ tangle <- function(filename) {
     res <- list()
   }
   knitr:::knit_code$restore()
+  options(knitr.purl.inline = old_opt)
+
   ##purrr::map(res, paste, collapse = "\n")
   res
 }
@@ -395,3 +401,15 @@ list_submissions <- function(subdir,
   }
 }
 
+#' Tangle inline code from file
+#'
+#' @param filename name of RMarkdown file
+#' @return list with inline code only
+#' @export
+scrape_inline <- function(filename) {
+  code <- tangle(filename, TRUE, 2L)
+  inline <- map(code, ~
+                        grep("`r\\s+.+`", .x, value = TRUE) %>%
+                        sub("^#' ", "", .))
+  inline[map_lgl(inline, ~ length(.x) > 0L)]
+}
