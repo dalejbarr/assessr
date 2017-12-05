@@ -231,7 +231,7 @@ tbl_same_dims <- function(subtbl,
         add_feedback(paste0("* `", subtbl, "` should have been ",
                             dim(sol_tbl)[1], "x", dim(sol_tbl)[2],
                             "; yours was ",
-                            dim(sub_tbl)[1], "x", dim(sub_tbl)[1]),
+                            dim(sub_tbl)[1], "x", dim(sub_tbl)[2]),
                      add = add)
       }
     }
