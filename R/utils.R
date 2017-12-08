@@ -119,6 +119,51 @@ num_vals_close <- function(subvar, sol_env, solvar = subvar,
   res
 }
 
+#' Are vector element values close?
+#'
+#' @param subvec name of the vector in the submission environment
+#' @param sol_env the solution environment
+#' @param tolerance how close the values have to be
+#' @param add whether to add feedback
+#' @return logical
+#' @export
+vec_vals_close <- function(subvec, sol_env, solvec = subvec,
+                           tolerance = .002, add = TRUE) {
+  res <- c("lengths_match" = FALSE,
+           "vals_match" = FALSE)
+
+  sol_vec <- get(solvec, envir = sol_env)
+  if (!exists(subvec, envir = parent.frame(), inherit = FALSE)) {
+    add_feedback(paste0("* you did not define `", subvec, "`"),
+                 add = add)
+  } else {
+    sub_vec <- get(subvec, envir = parent.frame(), inherits = FALSE)
+    if (is.vector(sub_vec)) {
+      if (length(sub_vec) == length(sol_vec)) {
+        res["lengths_match"] <- TRUE
+        if (!is.numeric(sub_vec)) {
+          add_feedback("* `", subvec, "` was not numeric", add = add)
+        } else {
+          if (any(is.nan(sub_vec)) || any(is.infinite(sub_vec))) {
+            add_feedback("* `", subvec,
+                         "` contained `NaN`, `+Inf`, or `-Inf` values",
+                         add = add)
+          } else {
+            res["vals_match"] <- all(abs(sub_vec - sol_vec) < tolerance)
+          }
+        }
+      } else {
+        add_feedback("* length of `", subvec,
+                     "` did not match solution; had ", length(sub_vec),
+                     " elements, but should have had ", length(sol_vec))
+      }
+    } else {
+      add_feedback("* `", subvec, "` was not a vector", add = add)
+    }
+  }
+  res  
+}
+
 #' Are submission and solution tables identical
 #'
 #' @param subtbl name of the table in submission environment
@@ -454,6 +499,86 @@ fun_exists <- function(fnname, add = TRUE) {
       add_feedback("* `", fnname, "` is not a function", add = add)
     } else {
       res = TRUE
+    }
+  }
+  res
+}
+
+#' Are character vectors equal?
+#'
+#' @param subvar name of variable in submission environment
+#' @param sol_env solution environment
+#' @param solvar name of solution variable
+#' @param ignore_order whether to ignore the ordering
+#' @param add whether to add feedback
+#' @return logical
+#' @export
+chr_vecs_equal <- function(subvar, sol_env, solvar = subvar,
+                           ignore_order = FALSE,
+                           add = TRUE) {
+  res <- c("lengths_match" = FALSE, "vals_match" = FALSE)
+  if (!exists(subvar, parent.frame(), inherits = FALSE)) {
+    add_feedback("* you did not define `", subvar,
+                 "` (check spelling and capitalization)", add = add)
+  } else {
+    sub_var <- get(subvar, parent.frame(), inherits = FALSE)
+    sol_var <- get(solvar, sol_env)
+    if (!is.vector(sub_var)) {
+      add_feedback("* `", subvar, "` was not a vector", add = add)
+    } else {
+      if (length(sub_var) != length(sol_var)) {
+        add_feedback("* length of `", subvar, "` (", length(sub_var),
+                     ") did not match solution (", length(sol_var), ")",
+                     add = add)
+      } else {
+        res["lengths_match"] <- TRUE
+        if (mode(sub_var) != "character") {
+          add_feedback("* `", subvar, "` was not of type 'character'")
+        } else {
+          if (ignore_order) {
+            res["vals_match"] <- setequal(sub_var, sol_var)
+          } else {
+            res["vals_match"] <- all(sub_var == sol_var)
+          }
+        }
+      }
+    }
+  }
+  res
+}
+
+#' Are logical vectors equal?
+#'
+#' @param subvar name of variable in submission environment
+#' @param sol_env solution environment
+#' @param solvar name of solution variable
+#' @param add whether to add feedback
+#' @return logical
+#' @export
+lgl_vecs_equal <- function(subvar, sol_env, solvar = subvar,
+                           add = TRUE) {
+  res <- c("lengths_match" = FALSE, "vals_match" = FALSE)
+  if (!exists(subvar, parent.frame(), inherits = FALSE)) {
+    add_feedback("* you did not define `", subvar,
+                 "` (check spelling and capitalization)", add = add)
+  } else {
+    sub_var <- get(subvar, parent.frame(), inherits = FALSE)
+    sol_var <- get(solvar, sol_env)
+    if (!is.vector(sub_var)) {
+      add_feedback("* `", subvar, "` was not a vector", add = add)
+    } else {
+      if (length(sub_var) != length(sol_var)) {
+        add_feedback("* length of `", subvar, "` (", length(sub_var),
+                     ") did not match solution (", length(sol_var), ")",
+                     add = add)
+      } else {
+        res["lengths_match"] <- TRUE
+        if (mode(sub_var) != "logical") {
+          add_feedback("* `", subvar, "` was not of type 'logical'")
+        } else {
+          res["vals_match"] <- all(sub_var == sol_var)
+        }
+      }
     }
   }
   res
