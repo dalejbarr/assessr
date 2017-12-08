@@ -110,6 +110,11 @@ num_vals_close <- function(subvar, sol_env, solvar = subvar,
           add_feedback("* `", subvar, "` was `NaN`, `+Inf`, or `-Inf`", add = add)
         } else {
           res["vals_match"] <- abs(sub_val - sol_val) < tolerance
+          if (res["vals_match"]) {
+            add_feedback("* your values matched the solution", add = add)
+          } else {
+            add_feedback("* your values did not match the solution; see solution code", add = add)
+          }
         }
       }
     } else {
