@@ -1,3 +1,28 @@
+reformat_long_lines <- function(x, cutoff = 75L, notify_reformat = TRUE) {
+  if (cutoff == -1) {
+    x
+  } else {
+    src <- evaluate::parse_all(x, allow_error = TRUE)[["src"]]
+    lens <- purrr::map(strsplit(src, "\n"), ~ map_int(.x, nchar))
+    todo <- purrr::map_lgl(lens, ~ any(.x > cutoff))
+    src[todo] <- purrr::map(src[todo], function(ff) {
+      reformat <- paste(formatR::tidy_source(text = ff,
+                                             comment = FALSE,
+                                             indent = 2,
+                                             width.cutoff = cutoff,
+                                             output = FALSE)$text.tidy,
+                        collapse = "\n")
+      if (notify_reformat) {
+        paste0("# NOTE: the line below was too wide and has been reformatted to fit\n",
+               reformat)
+      } else {
+        reformat
+      }
+    })
+    unlist(src)
+  }
+}
+
 #' Produce a feedback report
 #'
 #' @param d a table with assessment data for a single submission
@@ -7,6 +32,7 @@
 #' @param overwrite if exists, overwrite?
 #' @param quiet 'quiet' option for rmarkdown::render
 #' @param extra_params any extra parameters to pass to report (will appear in params$extra)
+#' @param reformat_wide reformat chunks where any single line is longer than this value (-1 = don't reformat)
 #' @return path to the report
 #' @importFrom magrittr %>%
 #' @export
@@ -16,7 +42,9 @@ feedback_report <- function(d,
                             subdir = "feedback_reports",
                             overwrite = FALSE,
                             quiet = TRUE,
-                            extra_params = NULL) {
+                            extra_params = NULL,
+                            long_line_cutoff = 75,
+                            empty_fbk = "* no issues") {
   if (subdir == "") {
     stop("'subdir' cannot be an empty string")
   }
@@ -32,12 +60,25 @@ feedback_report <- function(d,
   dir.create(fulldir, FALSE, TRUE)
 
   parms <- list()
-  parms$code <- d$code
+  parms$code <- purrr::map(d$code, reformat_long_lines,
+                           cutoff = long_line_cutoff, notify_reformat = TRUE)
   names(parms$code) <- d$task
 
-  parms$fbk <- as.list(d$fbk)
+  parms$fbk <- as.list(ifelse(d$fbk == "", empty_fbk, d$fbk))
   names(parms$fbk) <- d$task
 
+  parms$fig <- map(d$fig, function(.x) {
+    if (nchar(.x) > 23) {
+      fig2 <- substr(.x, 23, nchar(.x))
+      t <- tempfile(fileext = ".png")
+      writeBin(base64enc::base64decode(fig2), t)
+      paste0("\\includegraphics[width = .5\\textwidth]{", t, "}")
+    } else {
+      ""
+    }
+  })
+  names(parms$fig) <- d$task
+  
   credit_tbl <- 
     d[, c("task", "vars")] %>%
     tidyr::unnest() %>%
@@ -48,12 +89,14 @@ feedback_report <- function(d,
   ##parms$ctbl <- credit_tbl
   parms$extra <- extra_params
   
-  html <- rmarkdown::render(template,
-                            rmarkdown::pdf_document(),
-                            output_file = "feedback_report.pdf",
-                            output_dir = fulldir,
-                            params = parms,
-                            quiet = quiet)
+  rmarkdown::render(template,
+                    rmarkdown::pdf_document(
+                                 includes =
+                                   rmarkdown::includes(in_header = "header.tex")),
+                    output_file = "feedback_report.pdf",
+                    output_dir = fulldir,
+                    params = parms,
+                    quiet = quiet)
 }
 
 #' Create a feedback template for the assessment
@@ -83,8 +126,11 @@ feedback_template <- function(a_file,
   s_code <- tangle(s_file)
 
   cat("---\ntitle: Feedback Report\nauthor: Teaching Team\n",
-      "params:", "  code:  !r list()", "  fbk:   !r list()",
+      "params:",
+      "  code:  !r list()",
+      "  fbk:   !r list()",
       "  extra: !r list()",
+      "  fig:   !r list()",
       "---", sep = "\n", file = o_file)
 
   cat("\n", file = o_file, append = TRUE)
@@ -98,7 +144,8 @@ feedback_template <- function(a_file,
   purrr::walk(names(code), function(x) {
     cat("## Task\n\n", file = o_file, append = TRUE)
 
-    cat("### Your code and feedback\n\n", file = o_file, append = TRUE)
+    cat("\\renewenvironment{Shaded}{\\begin{subcode}}{\\end{subcode}}\n\n",
+        file = o_file, append = TRUE)
 
     cat(
       rmd_chunk_stub(paste0(x, "_sub"),
@@ -106,18 +153,22 @@ feedback_template <- function(a_file,
                      trailing = ""),
       sep = "\n", file = o_file, append = TRUE)
 
-    cat(
-      rmd_chunk_head(paste0(x, "_fbk"),
-                     list(results = "'asis'", echo = FALSE)),
-      sep = "\n", file = o_file, append = TRUE)
-    cat(paste0("cat(params$fbk$", x, ")\n```\n\n"),
+    cat("\\renewenvironment{Shaded}{\\begin{solcode}}{\\end{solcode}}\n\n",
         file = o_file, append = TRUE)
 
-    cat("### Solution\n\n", file = o_file, append = TRUE)
     cat(rmd_chunk_head(paste0(x, "_sol"),
                        list(eval = FALSE)),
         sep = "\n", file = o_file, append = TRUE)
     cat(s_code[[x]], "```", sep = "\n", file = o_file, append = TRUE)
+    cat("\n", file = o_file, append = TRUE)
+
+    cat(
+      rmd_chunk_head(paste0(x, "_fbk"),
+                     list(results = "'asis'", echo = FALSE)),
+      sep = "\n", file = o_file, append = TRUE)
+    cat(paste0("cat(paste0(\"> \", params$fbk$", x, "))\n```\n\n"),
+        file = o_file, append = TRUE)
+    
     cat("\n", file = o_file, append = TRUE)
   })
 
