@@ -111,6 +111,7 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
   if (!is.null(workdir)) {
     setwd(workdir) # living dangerously
   }
+
   for (i in seq_along(tasks_ix)) {
     this_env <- new.env(parent = lastenv)
     to_run <- setdiff((lastchunk + 1L):tasks_ix[i], tasks_ix[i])
@@ -138,7 +139,8 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
       stop(conditionMessage(res[[ix]]))
     }
     lastenv <- this_env
-    lastchunk <- to_run[length(to_run)]
+    if (length(to_run))
+      lastchunk <- to_run[length(to_run)]
     starting_env[[i]] <- this_env
   }
   setwd(oldwd)
