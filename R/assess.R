@@ -69,10 +69,11 @@ reset_feedback <- function() {
 #'   former case, all but the first of the `key$start_env`
 #'   environments will be ignored.
 #' @param workdir the working directory in which to evaluate the code
+#' @param seed starting seed for random number generation (or NULL to not set the seed)
 #' @return A table
 #' @export
 assess <- function(filename, sub_id = filename, key,
-                              use_sub_env = TRUE, workdir = NULL) {
+                   use_sub_env = TRUE, workdir = NULL, seed = NULL) {
   search_pre <- search()
   
   sub_chunks <- tangle(filename)
@@ -90,6 +91,10 @@ assess <- function(filename, sub_id = filename, key,
     setwd(workdir)
   }
 
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
+  
   res <- purrr::map(key[["task"]], function(x) {
     reset_feedback()
     if (!use_sub_env) {
@@ -140,9 +145,9 @@ assess <- function(filename, sub_id = filename, key,
     ## now any intervening blocks will have run
 
     ## create the list to contain assessment params
-    assign("._ar", list(), envir = this_env)
+    ## assign("._ar", list(), envir = this_env)
     ## copy the solution environment over to this_env
-    assign("._as", key[["sol_env"]][[x]], envir = this_env)
+    ## assign("._as", key[["sol_env"]][[x]], envir = this_env)
 
     ff <- list()
     ## ff$result <- assess_task(sub_id, x, sub_chunks,
@@ -150,7 +155,10 @@ assess <- function(filename, sub_id = filename, key,
     ## ff$error <- NULL
                       
     ff <- safely_assess_task(sub_id, x, sub_chunks,
-                             key[["a_code"]][[x]], this_env, use_sub_env)
+                             key[["a_code"]][[x]],
+                             this_env,
+                             key[["sol_env"]][[x]],
+                             use_sub_env)
     if (!is.null(ff[["error"]])) {
       setwd(oldwd)
       stop(ff[["error"]][["message"]])
@@ -184,8 +192,7 @@ assess <- function(filename, sub_id = filename, key,
 #' @param use_sub_env set to \code{TRUE} if you want to run in a single submission environment; \code{FALSE} to use the solution as starting environment
 #' @export
 assess_task <- function(sub_id, task, codelist, a_code,
-                        orig_env, use_sub_env = TRUE) {
-
+                        orig_env, sol_env, use_sub_env = TRUE) {
   sub_code <- codelist[[task]]
   if (is.null(sub_code)) {
     sub_code <- ""
@@ -200,6 +207,7 @@ assess_task <- function(sub_id, task, codelist, a_code,
   }
   assign("._ar", list(), sub_env)
   assign("._ac", sub_code, sub_env)
+  assign("._as", sol_env, sub_env)
   fig <- ""
 
   ## need add_feedback() in the environment

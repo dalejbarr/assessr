@@ -599,3 +599,34 @@ lgl_vecs_equal <- function(subvar, sol_env, solvar = subvar,
   }
   res
 }
+
+#' Are lmer models identical?
+#'
+#' @param subvar name of submission variable
+#' @param solenv solution environment
+#' @param solvar name of solution variable
+#' @param add whether to add feedback
+#' @return logical
+#' @export
+lmerMods_identical <- function(subvar, solenv, solvar = subvar, add = TRUE) {
+  res <- FALSE
+  if (!exists(subvar, parent.frame(), inherits = FALSE)) {
+    add_feedback("* `", subvar, "` was not defined", add = add)
+  } else {
+    submod <- get(subvar, parent.frame(), inherits = FALSE)
+    if (!inherits(submod, "lmerMod")) {
+      add_feedback("* `", subvar, "` was not of type `lmerMod`", add = add)
+    } else {
+      solmod <- get(solvar, solenv, inherits = FALSE)
+      res <- all.equal(VarCorr(solmod), VarCorr(submod)) &&
+        all.equal(attr(VarCorr(solmod), "sc"), attr(VarCorr(submod), "sc")) &&
+        all.equal(fixef(solmod), fixef(submod))
+      if (res) {
+        add_feedback("* model `", subvar, "` matched solution", add = add)
+      } else {
+        add_feedback("* model `", subvar, "` didn't match solution", add = add)
+      }
+    }
+  }
+  res
+}

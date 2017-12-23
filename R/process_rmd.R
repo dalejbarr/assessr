@@ -89,7 +89,7 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
   tasks_ix <- c(purrr::map_int(tasks, ~ which(names(sol_chunks) == .x)),
                 which(names(sol_chunks) == tasks[length(tasks)]) + 1L)
   starting_env <- list()
-  lastenv <- globalenv()
+  lastenv <- new.env()
   figlist <- vector("character", length(tasks))
   names(figlist) <- tasks
 
@@ -113,7 +113,11 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
   }
 
   for (i in seq_along(tasks_ix)) {
-    this_env <- new.env(parent = lastenv)
+    ## this_env <- new.env(parent = lastenv)
+    ## this_env <- as.environment(as.list(lastenv, all.names = TRUE))
+    this_env <- new.env()
+    for (n in ls(lastenv, all.names = TRUE)) assign(n, get(n, lastenv), this_env)
+    
     to_run <- setdiff((lastchunk + 1L):tasks_ix[i], tasks_ix[i])
     todo <- paste(unlist(sol_chunks[to_run]), collapse = "\n")
     
