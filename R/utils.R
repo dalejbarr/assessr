@@ -67,7 +67,6 @@ remove_comments <- function(x) {
 num_vals_close <- function(subvar, sol_env, solvar = subvar,
                            ignore.case = FALSE,
                            tolerance = .002, add = TRUE) {
-  ##browser()
   res <- c("is_single_val" = FALSE,
            "vals_match" = FALSE)
 
@@ -90,11 +89,13 @@ num_vals_close <- function(subvar, sol_env, solvar = subvar,
       add_feedback(paste0("* `", subvar, "` should be a single value, not a table"), add = add)
       if (nrow(sub_val) == 1) {
         ## find the numeric columns and compare them all
-        lgl_ix <- purrr::map_lgl(sub_val, is.numeric)
-        if (length(lgl_ix) > 0L) {
-          vec <- sub_val[1, lgl_ix]
-          res["vals_match"] <- any((vec - sol_val) < tolerance)
-        }
+          lgl_ix <- purrr::map_lgl(sub_val, ~ is.numeric(.x) | inherits(.x, "difftime"))
+          if (sum(lgl_ix) > 0L) {
+            vec <- as.vector(sub_val[1, lgl_ix])
+            res["vals_match"] <- any((vec - sol_val) < tolerance)
+          }
+      } else {
+        add_feedback("* `", subvar, "` was a table containing multiple rows; should have been a vector or at least, a table with only one row", add = add)
       }
     } else if (is.vector(sub_val)) {
       if (length(sub_val) == 1L) {
