@@ -60,9 +60,8 @@ feedback_report <- function(d,
   dir.create(fulldir, FALSE, TRUE)
 
   parms <- list()
-  parms$code <- d$code
-  ##parms$code <- purrr::map(d$code, reformat_long_lines,
-    ##                       cutoff = long_line_cutoff, notify_reformat = TRUE)
+  parms$code <- purrr::map(d$code, reformat_long_lines,
+                           cutoff = long_line_cutoff, notify_reformat = TRUE)
   names(parms$code) <- d$task
 
   parms$fbk <- as.list(ifelse(d$fbk == "", empty_fbk, d$fbk))

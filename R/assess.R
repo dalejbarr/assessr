@@ -240,16 +240,6 @@ assess_task <- function(sub_id, task, codelist, a_code,
   imgfile <- tempfile()
   png(imgfile)
   result <- evaluate::evaluate(sub_code, sub_env, new_device = FALSE)
-  lval <- result[sapply(result, function(x) !inherits(x, "source"))]
-  if (length(lval)) {
-    assign("._lastval", lval[[length(lval)]], envir = sub_env)
-  } else {
-    assign("._lastval", NULL, sub_env)
-  }
-  
-  ## message(result)
-  ## assign("._lastval", get(".Last.value", sub_env), envir = sub_env)
-  ## message(get("._lastval", envir = sub_env))
   dev.off()
   if (file.exists(imgfile)) {
     ##

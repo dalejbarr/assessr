@@ -125,12 +125,6 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
     png(imgfile)
     res <- evaluate::evaluate(todo, envir = this_env, new_device = FALSE,
                               stop_on_error = 0L)
-    lval <- res[sapply(res, function(x) !inherits(x, "source"))]
-    if (length(lval)) {
-      assign("._lastval",lval[[length(lval)]], envir = this_env)
-    } else {
-      assign("._lastval", NULL)
-    }
     dev.off()
     if (file.exists(imgfile) && save_fig) {      
       if (to_run[length(to_run)] %in% tasks_ix) {
