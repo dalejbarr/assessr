@@ -23,6 +23,48 @@ reformat_long_lines <- function(x, cutoff = 75L, notify_reformat = TRUE) {
   }
 }
 
+#' Produce feedback reports
+#'
+#' @param ares assessment result
+#' @param template an RMarkdown template for the report
+#' @param subdir the subdirectory for reports
+#' @param overwrite if exists, overwrite?
+#' @param quiet 'quiet' option for rmarkdown::render
+#' @param extra_params any extra parameters to pass to report (will appear in params$extra)
+#' @param long_line_cutoff reformat chunks where any single line is longer than this value (-1 = don't reformat)
+#' @param empty_fbk default feedback (when \code{fbk} field is empty)
+#' @param stop_after stop processing after N (-1 to process all)
+#' @return vector of report filenames
+#' @export
+feedback_all <- function(ares,
+                         template,
+                         subdir = "feedback_reports",
+                         overwrite = FALSE,
+                         quiet = TRUE,
+                         extra_params = NULL,
+                         long_line_cutoff = 75,
+                         empty_fbk = "* no issues",
+                         stop_after = -1L) {
+  ar2 <- ares %>%
+    group_by(sub_id, filename) %>%
+    nest()
+  if (stop_after != -1L) {
+    ar2 <- slice(ar2, 1:stop_after)
+  }
+  n_todo <- length(ar2[["data"]])
+  todo <- list(ar2[["data"]], ar2[["filename"]],
+               template, ar2[["sub_id"]],
+               seq_along(ar2[["data"]]))
+  purrr::pmap_chr(todo,
+                  function(.x, .y, tpl, sid, ix) {
+                    message("Processing ", ix, " of ", n_todo,
+                            " (", sid, ")")
+                    feedback_report(.x, .y, tpl, subdir,
+                                    overwrite, quiet, extra_params,
+                                    long_line_cutoff, empty_fbk)
+                  })
+}
+
 #' Produce a feedback report
 #'
 #' @param d a table with assessment data for a single submission
@@ -32,7 +74,8 @@ reformat_long_lines <- function(x, cutoff = 75L, notify_reformat = TRUE) {
 #' @param overwrite if exists, overwrite?
 #' @param quiet 'quiet' option for rmarkdown::render
 #' @param extra_params any extra parameters to pass to report (will appear in params$extra)
-#' @param reformat_wide reformat chunks where any single line is longer than this value (-1 = don't reformat)
+#' @param long_line_cutoff reformat chunks where any single line is longer than this value (-1 = don't reformat)
+#' @param empty_fbk default feedback (when \code{fbk} field is empty)
 #' @return path to the report
 #' @importFrom magrittr %>%
 #' @export
@@ -194,3 +237,4 @@ rmd_chunk_stub <- function(chunk_name, params = list(), trailing = "\n") {
         trailing,
         sep = "\n")
 }
+

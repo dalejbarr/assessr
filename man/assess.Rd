@@ -5,7 +5,7 @@
 \title{Assess a submission}
 \usage{
 assess(filename, sub_id = filename, key, use_sub_env = TRUE,
-  workdir = NULL)
+  workdir = NULL, seed = NULL)
 }
 \arguments{
 \item{filename}{name of submission file}
@@ -22,6 +22,8 @@ former case, all but the first of the `key$start_env`
 environments will be ignored.}
 
 \item{workdir}{the working directory in which to evaluate the code}
+
+\item{seed}{starting seed for random number generation (or NULL to not set the seed)}
 }
 \value{
 A table

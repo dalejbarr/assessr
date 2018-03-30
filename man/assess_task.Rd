@@ -4,7 +4,8 @@
 \alias{assess_task}
 \title{Assess individual task}
 \usage{
-assess_task(sub_id, task, codelist, a_code, orig_env, use_sub_env = TRUE)
+assess_task(sub_id, task, codelist, a_code, orig_env, sol_env,
+  use_sub_env = TRUE)
 }
 \arguments{
 \item{sub_id}{submission id}

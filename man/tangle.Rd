@@ -4,10 +4,14 @@
 \alias{tangle}
 \title{Tangle code from Rmd file}
 \usage{
-tangle(filename)
+tangle(filename, inline_code = FALSE, documentation = 1L)
 }
 \arguments{
 \item{filename}{name of Rmd file to tangle}
+
+\item{inline_code}{keep inline code?}
+
+\item{documentation}{see \code{\link{knitr::purl}}}
 }
 \value{
 A list containing file blocks

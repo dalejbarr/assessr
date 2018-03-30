@@ -1,3 +1,24 @@
+#' Round up from .5
+#'
+#' @param x a numeric string (or number that can be converted to a
+#'   string)
+#' @param digits integer indicating the number of decimal places
+#'   (`round`) or significant digits (`signif`) to be used.
+#' @details Implements rounding using the "round up from .5" rule,
+#'   which is more conventional than the "round to even" rule
+#'   implemented by R's built-in \code{\link{round}} function. This
+#'   implementation was taken from
+#'   (https://stackoverflow.com/a/12688836).
+#' @export
+round2 = function(x, digits = 0) {
+  posneg = sign(x)
+  z = abs(x)*10^digits
+  z = z + 0.5
+  z = trunc(z)
+  z = z/10^digits
+  z*posneg
+}
+
 #' Vectorized version of all.equal
 #'
 #' @param x vector whose elements you want to compare

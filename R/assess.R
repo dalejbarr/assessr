@@ -293,6 +293,7 @@ safely_assess_task <- purrr::safely(assess_task)
 #' 
 #' @param s_file name of file with solutions
 #' @return name of the output file
+#' @export
 assessment_code <- function(s_file, o_file = "assess_code.Rmd",
                             overwrite = FALSE) {
   if (file.exists(o_file) && !overwrite) {
@@ -315,4 +316,37 @@ assessment_code <- function(s_file, o_file = "assess_code.Rmd",
           " to file '", o_file, "'")
 
   return(invisible(o_file))
+}
+
+#' Assess all files in a directory
+#'
+#' Convenience function that runs the function \code{assess} on all files within the directory specified by \code{dirname}.
+#'
+#' @param dirname name of the directory containing the submission files
+#' @param key key (answers to the problems); normally result of call to \code{link{compile_key}}
+#' @param sub_id subject identifies (vector same length as \code{dirname})
+#' @param use_sub_env process submission code in the submission environment (\code{FALSE} to process it in the solution environment)
+#' @param workdir working directory
+#' @param seed random seed
+#' @param stop_after stop processing after completing N files
+#' @return a dataframe with the assessment variables and their values
+#' @export 
+assess_all <- function(dirname,
+                       key,
+                       sub_id = moodle_id(list_submissions(dirname)),
+                       use_sub_env = TRUE,
+                       workdir = NULL,
+                       seed = NULL,
+                       stop_after = -1L) {
+  todo <- list_submissions(dirname)
+  if (stop_after != -1L) {
+    todo <- todo[1:stop_after]
+    sub_id <- sub_id[1:stop_after]
+  }
+  purrr::pmap_df(list(todo, sub_id, seq_along(todo)),
+                 function(.x, .y, .z) {
+                   message("Processing ", .z, " of ", length(todo), " (",
+                           .y, ")")
+                   assess(.x, .y, key, use_sub_env, workdir, seed)
+                 })
 }
