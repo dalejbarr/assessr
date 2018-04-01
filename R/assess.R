@@ -57,6 +57,25 @@ reset_feedback <- function() {
   }
 }
 
+safe_eval <- function(this_code, this_env, new_device) {
+  ## were any "forbidden" functions called?
+  ## sub_code <- strsplit(sub_code, "\n")[[1]]
+  forbidden <- get_blacklist()
+  fb_regx <- forbidden[["regex"]]
+  is_forbid <-
+    purrr::map_lgl(fb_regx, ~ any(grepl(.x,
+                                        remove_comments(this_code))))
+  if (any(is_forbid)) {
+    ## remove them
+    for (i in forbidden[is_forbid, "regex"]) {
+      this_code <- gsub(i, "## \\2(", this_code)
+    }
+  }  
+  evaluate::evaluate(this_code,
+                     this_env,
+                     new_device)
+}
+
 #' Assess a submission
 #' 
 #' @param filename name of submission file
@@ -125,9 +144,7 @@ assess <- function(filename, sub_id = filename, key,
           purrr::walk(chk_todo, function(nx) {
             imgfile <- tempfile()
             png(imgfile)
-            result <- evaluate::evaluate(sub_chunks[[nx]],
-                                         this_env,
-                                         new_device = FALSE)
+            result <- safe_eval(sub_chunks[[nx]], this_env, new_device = FALSE)
             dev.off()
             ## check for errors
             errs <- purrr::map_lgl(result, evaluate::is.error)
