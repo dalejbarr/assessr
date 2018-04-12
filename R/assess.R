@@ -73,7 +73,7 @@ safe_eval <- function(this_code, this_env, new_device) {
   }  
   evaluate::evaluate(this_code,
                      this_env,
-                     new_device)
+                     new_device = new_device)
 }
 
 #' Assess a submission
