@@ -105,7 +105,11 @@ browse_assessment <- function(x) {
                                  s2 <- list()
                                  if (f != "") {
                                    ## browser()
-                                   s2 <- list(shiny::img(src = f))
+                                   if (substr(f, 1, 10) == "data:image") {
+                                     s2 <- list(shiny::img(src = f))
+                                   } else {
+                                     s2 <- list(HTML(f))
+                                   }
                                  }
                                  s3 <- list(shiny::textAreaInput(uname("fbk",
                                                                        x, t),

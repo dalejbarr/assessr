@@ -265,6 +265,8 @@ apply_blacklist <- function(subfile, overwrite = TRUE) {
 #' @param subfile path to submission RMarkdown file
 #' @param quiet whether to run quietly (suppress messages)
 #' @param blacklist comment out lines of code containing blacklisted functions
+#' @param env environment in which to compile
+#' @param knit_root_dir root directory for knitting (see \code{\link{rmarkdown::render}})
 #' @param fix_filename replace any spaces or brackets in the filename with underscores before rendering
 #' @details runs a safe version of \code{\link{rmarkdown::render}} on
 #'   the submision file
@@ -273,6 +275,7 @@ compile_assignment <- function(subfile,
                                quiet = FALSE,
                                blacklist = TRUE,
                                env = parent.frame(),
+                               knit_root_dir = NULL,
                                fix_filename = TRUE) {
   search_pre <- search()
   
@@ -299,6 +302,7 @@ compile_assignment <- function(subfile,
                             ##output_dir = dirname(subfile),
                             ## knit_root_dir = dirname(subfile),
                             envir = env,
+                            knit_root_dir = knit_root_dir,
                             quiet = quiet),
           error = function(c) c)))
     sink()
@@ -308,6 +312,7 @@ compile_assignment <- function(subfile,
                                   ## output_dir = dirname(subfile),
                                       ## knit_root_dir = dirname(subfile),
                                       envir = env,
+                                      knit_root_dir = knit_root_dir,
                                       quiet = TRUE),
                     error = function(c) c)
   }
@@ -327,22 +332,26 @@ compile_assignment <- function(subfile,
 
 #' Compile all RMarkdown submissions
 #'
-#' @param subs character vector of submission file names
+#' @param dir directory containing RMarkdown submissions
 #' @param quiet suppress messages while compiling
 #' @param blacklist comment out lines of code containing blacklisted functions
 #' @param progress report file-by-file progress
 #' @param return should return table contain moodle id number
+#' @param knit_root_dir root directory for knitting (see \code{\link{rmarkdown::render}})
 #' @return table with information about compilation for each submission
 #' @details Convenience function to call \code{\link{compile_assignment}} repeatedly for each RMarkdown file in subdirectory \code{subdir}
 #' @importFrom magrittr %>%
 #' @export
-compile_all <- function(subs,
+compile_all <- function(dir,
                         quiet = TRUE,
                         blacklist = TRUE,
                         progress = TRUE,
-                        with_moodle_id = FALSE) {
+                        with_moodle_id = FALSE,
+                        knit_root_dir = NULL) {
 
   env = parent.frame()
+
+  subs <- list_submissions(dir)
   
   rtbl <- purrr::map2_df(subs, seq_along(subs), function(x, i) {
     if (progress) {

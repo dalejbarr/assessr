@@ -111,13 +111,14 @@ feedback_report <- function(d,
   names(parms$fbk) <- d$task
 
   parms$fig <- map(d$fig, function(.x) {
-    if (nchar(.x) > 23) {
+    ## if (nchar(.x) > 23) {
+    if (substr(.x, 1, 10) == "data:image") {
       fig2 <- substr(.x, 23, nchar(.x))
       t <- tempfile(fileext = ".png")
       writeBin(base64enc::base64decode(fig2), t)
       paste0("\\includegraphics[width = .5\\textwidth]{", t, "}")
     } else {
-      ""
+      .x
     }
   })
   names(parms$fig) <- d$task
