@@ -17,6 +17,7 @@ Imports: knitr,
     stringr,
     getPass,
     httr,
-    lme4
+    lme4,
+    broom
 RoxygenNote: 6.0.1
 Suggests: testthat

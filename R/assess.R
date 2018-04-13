@@ -171,7 +171,6 @@ assess <- function(filename, sub_id = filename, key,
     ## ff$result <- assess_task(sub_id, x, sub_chunks,
     ##                         key[["a_code"]][[x]], this_env, use_sub_env)
     ## ff$error <- NULL
-
     ff <- safely_assess_task(sub_id, x, sub_chunks,
                              key[["a_code"]][[x]],
                              this_env,

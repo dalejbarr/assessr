@@ -485,7 +485,13 @@ objs_identical <- function(subobj,
                    paste(class(sub_obj), collapse = ", "), "` but should have been `",
                    paste(class(sol_obj), collapse = ", "), "`", add = add)
     } else {
-      res <- identical(sub_obj, sol_obj)
+      if (!is.null(sub_obj$model)) {
+        attributes(sub_obj$model) <- NULL
+        attributes(sol_obj$model) <- NULL
+        attributes(sub_obj$terms) <- NULL
+        attributes(sol_obj$terms) <- NULL
+      }
+      res <- identical(sub_obj, sol_obj, ignore.environment = TRUE)
       if (res) {
         add_feedback("* `", subobj, "` matched solution", add = add)
       } else {
@@ -616,9 +622,14 @@ lgl_vecs_equal <- function(subvar, sol_env, solvar = subvar,
       } else {
         res["lengths_match"] <- TRUE
         if (mode(sub_var) != "logical") {
-          add_feedback("* `", subvar, "` was not of type 'logical'")
+          add_feedback("* `", subvar, "` was not of type 'logical'", add = add)
         } else {
           res["vals_match"] <- all(sub_var == sol_var)
+          if (res["vals_match"]) {
+            add_feedback("* `", subvar, "` matched the solution", add = add)
+          } else {
+            add_feedback("* `", subvar, "` did not match the solution", add = add)
+          }
         }
       }
     }
@@ -703,4 +714,37 @@ fun_result_identical <- function(subfn, args = list(),
   }
 
   result
+}
+
+#' Are linear models identical?
+#'
+#' @param subvar name of variable in submission environment
+#' @param solenv solution environment
+#' @param solvar name of variable in solution environment
+#' @param add whether to add feedback
+#' @return logical value
+#' @export
+lms_identical <- function(subvar, solenv, solvar = subvar, add = TRUE) {
+  res <- FALSE
+  sol_obj <- get(solvar, envir = solenv)
+  if (!exists(subvar, envir = parent.frame(), inherits = FALSE)) {
+    add_feedback("* variable `", subvar,
+                 "` was not defined; check spelling/capitalization",
+                 add = add)
+  } else {
+    sub_obj <- get(subvar, envir = parent.frame(), inherits = FALSE)
+    if (!identical(class(sub_obj), class(sol_obj))) {
+      add_feedback("* object `", subvar, "` was of incorrect type; was of class `",
+                   paste(class(sub_obj), collapse = ", "), "` but should have been `",
+                   paste(class(sol_obj), collapse = ", "), "`", add = add)
+    } else {
+      res <- dplyr::setequal(broom::tidy(sub_obj), broom::tidy(sol_obj))
+      if (res) {
+        add_feedback("* `", subvar, "` matched solution", add = add)
+      } else {
+        add_feedback("* `", subvar, "` did not match solution", add = add)
+      }
+    }
+  }
+  res
 }
