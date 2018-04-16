@@ -465,15 +465,17 @@ get_err_string <- function(x) {
 #'
 #' @param subobj name of submission object
 #' @param sol_env solution environment
+#' @param solobj name of solution object
 #' @param add add feedback
 #' @return logical
 #' @details use this to compare any two objects (e.g., fitted model objects resulting from a call to `lm()`, `aov()`, etc)
 #' @export
 objs_identical <- function(subobj,
                            sol_env,
+                           solobj = subobj,
                            add = TRUE) {
   res <- FALSE
-  sol_obj <- get(subobj, envir = sol_env)
+  sol_obj <- get(solobj, envir = sol_env)
   if (!exists(subobj, envir = parent.frame(), inherits = FALSE)) {
     add_feedback("* object `", subobj,
                  "` was not defined; check spelling/capitalization",
