@@ -45,6 +45,9 @@ feedback_all <- function(ares,
                          long_line_cutoff = 75,
                          empty_fbk = "* no issues",
                          stop_after = -1L) {
+
+  safe_report <- purrr::safely(feedback_report)
+  
   ar2 <- ares %>%
     group_by(sub_id, filename) %>%
     nest()
@@ -55,14 +58,21 @@ feedback_all <- function(ares,
   todo <- list(ar2[["data"]], ar2[["filename"]],
                template, ar2[["sub_id"]],
                seq_along(ar2[["data"]]))
-  purrr::pmap_chr(todo,
-                  function(.x, .y, tpl, sid, ix) {
-                    message("Processing ", ix, " of ", n_todo,
-                            " (", sid, ")")
-                    feedback_report(.x, .y, tpl, subdir,
-                                    overwrite, quiet, extra_params,
-                                    long_line_cutoff, empty_fbk)
-                  })
+  result <- purrr::pmap(todo,
+              function(.x, .y, tpl, sid, ix) {
+                message("Processing ", ix, " of ", n_todo,
+                        " (", sid, ")")
+                safe_report(.x, .y, tpl, subdir,
+                                overwrite, quiet, extra_params,
+                                long_line_cutoff, empty_fbk)
+              })
+  ## TODO: produce warnings
+  fnames <- purrr::map(result, function(x) {x[["result"]]})
+  errs <- purrr::map(result, function(x) {x[["error"]]})
+  tibble(sub_id = ar2[["sub_id"]],
+         compiled = !purrr::map_lgl(fnames, is.null),
+         filename = purrr::map_chr(fnames, ~ if (is.null(.x)) "" else .x),
+         error = errs)
 }
 
 #' Produce a feedback report
