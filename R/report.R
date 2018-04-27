@@ -23,6 +23,72 @@ reformat_long_lines <- function(x, cutoff = 75L, notify_reformat = TRUE) {
   }
 }
 
+#' Produce a feedback report
+#'
+#' @param d a table with assessment data for a single submission
+#' @param filename filename of the submission
+#' @param template an RMarkdown template for the report
+#' @param subdir the subdirectory for reports
+#' @param overwrite if exists, overwrite?
+#' @param quiet 'quiet' option for rmarkdown::render
+#' @param extra_params any extra parameters to pass to report (will appear in params$extra)
+#' @param long_line_cutoff reformat chunks where any single line is longer than this value (-1 = don't reformat)
+#' @param empty_fbk default feedback (when \code{fbk} field is empty)
+#' @return path to the report
+#' @importFrom magrittr %>%
+#' @export
+feedback_report <- function(d,
+                            filename,
+                            template,
+                            subdir = "feedback_reports",
+                            overwrite = FALSE,
+                            quiet = TRUE,
+                            extra_params = NULL,
+                            empty_fbk = "* no issues") {
+  if (subdir == "") {
+    stop("'subdir' cannot be an empty string")
+  }
+  fulldir <- file.path(sub("/+$", "", subdir), # trailing /
+                       sub("(^.+/|^\\.$)", "", dirname(filename)))
+  if (dir.exists(fulldir)) {
+    if (!overwrite) {
+      stop("'", fulldir, "' exists and 'overwrite' is FALSE")
+    } else {
+      unlink(fulldir, recursive = TRUE)
+    }
+  }
+  dir.create(fulldir, FALSE, TRUE)
+
+  parms <- list()
+  parms$code <- d$code
+  names(parms$code) <- d$task
+
+  parms$fbk <- as.list(ifelse(d$fbk == "", empty_fbk, d$fbk))
+  names(parms$fbk) <- d$task
+
+  parms$fig <- map(d$fig, function(.x) {
+    ## if (nchar(.x) > 23) {
+    if (substr(.x, 1, 10) == "data:image") {
+      fig2 <- substr(.x, 23, nchar(.x))
+      t <- tempfile(fileext = ".png")
+      writeBin(base64enc::base64decode(fig2), t)
+      paste0("<img src=\"", t, "\" />")
+    } else {
+      .x
+    }
+  })
+  names(parms$fig) <- d$task
+  
+  parms$extra <- extra_params
+  
+  rmarkdown::render(template,
+                    rmarkdown::html_document(),
+                    output_file = "feedback_report.html",
+                    output_dir = fulldir,
+                    params = parms,
+                    quiet = quiet)
+}
+
 #' Produce feedback reports
 #'
 #' @param ares assessment result
@@ -31,7 +97,6 @@ reformat_long_lines <- function(x, cutoff = 75L, notify_reformat = TRUE) {
 #' @param overwrite if exists, overwrite?
 #' @param quiet 'quiet' option for rmarkdown::render
 #' @param extra_params any extra parameters to pass to report (will appear in params$extra)
-#' @param long_line_cutoff reformat chunks where any single line is longer than this value (-1 = don't reformat)
 #' @param empty_fbk default feedback (when \code{fbk} field is empty)
 #' @param stop_after stop processing after N (-1 to process all)
 #' @return vector of report filenames
@@ -42,7 +107,6 @@ feedback_all <- function(ares,
                          overwrite = FALSE,
                          quiet = TRUE,
                          extra_params = NULL,
-                         long_line_cutoff = 75,
                          empty_fbk = "* no issues",
                          stop_after = -1L) {
 
@@ -64,7 +128,7 @@ feedback_all <- function(ares,
                         " (", sid, ")")
                 safe_report(.x, .y, tpl, subdir,
                                 overwrite, quiet, extra_params,
-                                long_line_cutoff, empty_fbk)
+                                empty_fbk)
               })
   ## TODO: produce warnings
   fnames <- purrr::map(result, function(x) {x[["result"]]})
@@ -89,7 +153,7 @@ feedback_all <- function(ares,
 #' @return path to the report
 #' @importFrom magrittr %>%
 #' @export
-feedback_report <- function(d,
+feedback_report_pdf <- function(d,
                             filename,
                             template,
                             subdir = "feedback_reports",
