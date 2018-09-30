@@ -66,7 +66,7 @@ feedback_report <- function(d,
   parms$fbk <- as.list(ifelse(d$fbk == "", empty_fbk, d$fbk))
   names(parms$fbk) <- d$task
 
-  parms$fig <- map(d$fig, function(.x) {
+  parms$fig <- purrr::map(d$fig, function(.x) {
     ## if (nchar(.x) > 23) {
     if (substr(.x, 1, 10) == "data:image") {
       fig2 <- substr(.x, 23, nchar(.x))
@@ -113,10 +113,10 @@ feedback_all <- function(ares,
   safe_report <- purrr::safely(feedback_report)
   
   ar2 <- ares %>%
-    group_by(sub_id, filename) %>%
-    nest()
+    dplyr::group_by(sub_id, filename) %>%
+    tidyr::nest()
   if (stop_after != -1L) {
-    ar2 <- slice(ar2, 1:stop_after)
+    ar2 <- dplyr::slice(ar2, 1:stop_after)
   }
   n_todo <- length(ar2[["data"]])
   todo <- list(ar2[["data"]], ar2[["filename"]],
@@ -133,7 +133,7 @@ feedback_all <- function(ares,
   ## TODO: produce warnings
   fnames <- purrr::map(result, function(x) {x[["result"]]})
   errs <- purrr::map(result, function(x) {x[["error"]]})
-  tibble(sub_id = ar2[["sub_id"]],
+  tibble::tibble(sub_id = ar2[["sub_id"]],
          compiled = !purrr::map_lgl(fnames, is.null),
          filename = purrr::map_chr(fnames, ~ if (is.null(.x)) "" else .x),
          error = errs)
@@ -285,6 +285,90 @@ feedback_template <- function(a_file,
                      list(results = "'asis'", echo = FALSE)),
       sep = "\n", file = o_file, append = TRUE)
     cat(paste0("cat(paste0(\"> \", params$fbk$", x, "))\n```\n\n"),
+        file = o_file, append = TRUE)
+    
+    cat("\n", file = o_file, append = TRUE)
+  })
+
+  message("Wrote code chunks for ", length(code),
+          " assessed ",
+          if (length(code) > 1) "blocks" else "block",
+          " to file '", o_file, "'")
+  
+  return(invisible(o_file))
+}
+
+#' Create a feedback template for HTML assessment report
+#'
+#' @param a_file rmarkdown file with assessment code
+#' @param s_file rmarkdown file with solutions
+#' @param o_file name of output file
+#' @param overwrite overwrite the file if it exists
+#' @return name of the output file
+fbk_template_html <- function(a_file,
+                              s_file,
+                              o_file = "feedback_template.Rmd",
+                              overwrite = FALSE) {
+  if (file.exists(o_file) && !overwrite) {
+    stop("output file '", o_file, "' exists and overwrite = FALSE")
+  }
+
+  if (!file.exists(a_file)) {
+    stop("couldn't find assessment file '", a_file, "'")
+  }
+
+  if (!file.exists(s_file)) {
+    stop("couldn't find solution file '", s_file, "'")
+  }
+
+  code <- tangle(a_file)
+  s_code <- tangle(s_file)
+
+  cat("---\ntitle: Feedback Report\nauthor: Teaching Team\n",
+      "params:",
+      "  code:  !r list()",
+      "  fbk:   !r list()",
+      "  extra: !r list()",
+      "  fig:   !r list()",
+      "---", sep = "\n", file = o_file)
+
+  cat("\n", file = o_file, append = TRUE)
+
+  cat("```{r setup, include=FALSE}",
+      "knitr::opts_chunk$set(echo = TRUE)", "```",
+      sep = "\n", file = o_file, append = TRUE)
+
+  cat("\n", file = o_file, append = TRUE)
+
+  purrr::walk(names(code), function(x) {
+    cat("## Task\n\n", file = o_file, append = TRUE)
+
+    cat("### Your code\n",
+        file = o_file, append = TRUE)
+
+    cat(
+      rmd_chunk_stub(paste0(x, "_sub"),
+                     list(eval = FALSE, code = paste0("params$code$", x)),
+                     trailing = ""),
+      sep = "\n", file = o_file, append = TRUE)
+
+    cat("### Solution code\n",
+        file = o_file, append = TRUE)
+
+    cat(rmd_chunk_head(paste0(x, "_sol"),
+                       list(eval = FALSE)),
+        sep = "\n", file = o_file, append = TRUE)
+    cat(s_code[[x]], "```", sep = "\n", file = o_file, append = TRUE)
+    cat("\n", file = o_file, append = TRUE)
+
+    cat("### Feedback\n",
+        file = o_file, append = TRUE)
+    
+    cat(
+      rmd_chunk_head(paste0(x, "_fbk"),
+                     list(results = "'asis'", echo = FALSE)),
+      sep = "\n", file = o_file, append = TRUE)
+    cat(paste0("cat(params$fbk$", x, ")\n```\n\n"),
         file = o_file, append = TRUE)
     
     cat("\n", file = o_file, append = TRUE)

@@ -159,7 +159,8 @@ num_vals_close <- function(subvar, sol_env, solvar = subvar,
 #' @return logical
 #' @export
 vec_vals_close <- function(subvec, sol_env, solvec = subvec,
-                           tolerance = .002, add = TRUE) {
+                           tolerance = .002,
+                           add = TRUE) {
   res <- c("lengths_match" = FALSE,
            "vals_match" = FALSE)
 
@@ -168,6 +169,7 @@ vec_vals_close <- function(subvec, sol_env, solvec = subvec,
     add_feedback(paste0("* you did not define `", subvec, "`"),
                  add = add)
   } else {
+    ## variable exists
     sub_vec <- get(subvec, envir = parent.frame(), inherits = FALSE)
     if (is.vector(sub_vec)) {
       if (length(sub_vec) == length(sol_vec)) {
@@ -180,11 +182,24 @@ vec_vals_close <- function(subvec, sol_env, solvec = subvec,
                          "` contained `NaN`, `+Inf`, or `-Inf` values",
                          add = add)
           } else {
-            res["vals_match"] <- all(abs(sub_vec - sol_vec) < tolerance)
-            if (res["vals_match"]) {
-              add_feedback("* correct", add = add)
-            } else {
-              add_feedback("* incorrect; see solution code", add = add)
+            ## if there aren't NAs in the solution, but there are in the
+            ## submission, then it is wrong
+            if (!any(is.na(sol_vec)) && any(is.na(sub_vec))) {
+              add_feedback("* your answer contained NA values")
+            } else { 
+              if (length(sub_vec[!is.na(sub_vec)]) !=
+                  length(sol_vec[!is.na(sol_vec)])) {
+                add_feedback("* incorrect; see solution code")
+              } else {
+                res["vals_match"] <- all(abs(sub_vec - sol_vec) < tolerance,
+                                         na.rm = TRUE) &&
+                  (length(sub_vec) > 0L)
+                if (res["vals_match"]) {
+                  add_feedback("* correct", add = add)
+                } else {
+                  add_feedback("* incorrect; see solution code", add = add)
+                }
+              }
             }
           }
         }
@@ -256,11 +271,13 @@ fn_regex <- function(fname) {
 #' @param fn function to search for
 #' @param code the submission code (usually you pass the variable
 #'   \code{._ar$current_code})
+#' @param remove_comments do you want to remove comments before checking?
 #' @return logical; \code{TRUE} if the function is found anywhere in
 #'   the code (comments in the code are ignored).
 #' @export
-code_includes <- function(fn, code) {
-  any(grepl(fn_regex(fn), remove_comments(code)))
+code_includes <- function(fn, code, remove_comments = TRUE) {
+  any(grepl(fn_regex(fn),
+            if (remove_comments) remove_comments(code) else code))
 }
 
 #' Same number of rows in table
