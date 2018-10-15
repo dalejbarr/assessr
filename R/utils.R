@@ -776,11 +776,14 @@ lms_identical <- function(subvar, solenv, solvar = subvar, add = TRUE) {
 #' @details If no attempt was made, then the value of \code{subvar} will remain \code{NULL}.
 #' @return Returns \code{FALSE} only if \code{subvar} is \code{NULL}.
 #' @export
-attempted <- function(subvar) {
+attempted <- function(subvar, add = TRUE) {
   res <- TRUE
   if (exists(subvar, envir = parent.frame(), inherits = FALSE)) {
     sub_var <- get(subvar, envir = parent.frame(), inherits = FALSE)
     res <- !is.null(sub_var)
+  }
+  if (!res) {
+    add_feedback("* No attempt", add = add)
   }
   res
 }
