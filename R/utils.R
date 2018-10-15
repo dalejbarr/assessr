@@ -332,6 +332,8 @@ tbl_same_dims <- function(subtbl,
                             "; yours was ",
                             dim(sub_tbl)[1], "x", dim(sub_tbl)[2]),
                      add = add)
+      } else {
+        add_feedback("* dimensions of your table matched the solution", add = add)
       }
     }
   }    
@@ -600,7 +602,7 @@ chr_vecs_equal <- function(subvar, sol_env, solvar = subvar,
           if (ignore_order) {
             res["vals_match"] <- setequal(sub_var, sol_var)
           } else {
-            res["vals_match"] <- all(sub_var == sol_var)
+            res["vals_match"] <- identical(sub_var, sol_var)
           }
           if (res["vals_match"]) {
             add_feedback("* correct", add = add)
@@ -764,6 +766,21 @@ lms_identical <- function(subvar, solenv, solvar = subvar, add = TRUE) {
         add_feedback("* `", subvar, "` did not match solution", add = add)
       }
     }
+  }
+  res
+}
+
+#' Check whether any attempt was made to answer the question
+#'
+#' @param subvar Name of the submission variable to test.
+#' @details If no attempt was made, then the value of \code{subvar} will remain \code{NULL}.
+#' @return Returns \code{FALSE} only if \code{subvar} is \code{NULL}.
+#' @export
+attempted <- function(subvar) {
+  res <- TRUE
+  if (exists(subvar, envir = parent.frame(), inherits = FALSE)) {
+    sub_var <- get(subvar, envir = parent.frame(), inherits = FALSE)
+    res <- !is.null(sub_var)
   }
   res
 }
