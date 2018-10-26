@@ -242,6 +242,21 @@ tbls_identical <- function(subtbl,
         colnames(sub2) <- tolower(colnames(sub_tbl))
       }
     }
+    ## check for list columns, which will cause setequal to fail
+    sub_types <- purrr::map_chr(sub2, class)
+    sol_types <- purrr::map_chr(sol2, class)
+    if (any(sub_types == "list")) {
+      warning("tbls_identical is dropping list-column(s) named '",
+              paste(colnames(sub2)[sub_types == "list"], collapse = ", "),
+              "' from submission table '", subtbl, "'")
+      sub2 <- sub2[sub_types != "list"]
+    }
+    if (any(sol_types == "list")) {
+      warning("tbls_identical is dropping list-column(s) named '",
+              paste(colnames(sol2)[sol_types == "list"], collapse = ", "),
+              "' from solution table '", soltbl, "'")
+      sol2 <- sol2[sol_types != "list"]      
+    }
     if (!dplyr::setequal(sol2, sub2)) {
       add_feedback("* your table `", subtbl, "` differs from the solution table; see solution code", add = add)
     } else {
