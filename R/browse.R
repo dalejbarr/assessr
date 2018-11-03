@@ -80,14 +80,18 @@ browse_assessment <- function(x) {
         if (is.null(ares_task[["html"]])) {
           ares_task[["html"]] <- rep("", length(ares_task[["sub_id"]]))
         }
+        if (is.null(ares_task[["hfile"]])) {
+          ares_task[["hfile"]] <- rep("", length(ares_task[["sub_id"]]))
+        }
         shiny::renderUI({
           ilist <- purrr::pmap(list(ares_task[["sub_id"]],
                                     ares_task[["code"]],
                                     ares_task[["fbk"]],
                                     ares_task[["vars"]],
                                     ares_task[["fig"]],
-                                    ares_task[["html"]]),
-                               function(x, y, z, v, f, h) {
+                                    ares_task[["html"]],
+                                    ares_task[["hfile"]]),
+                               function(x, y, z, v, f, h, hf) {
                                  s1 <- list(shiny::hr(),
                                             if (h == "") {
                                               shiny::p(x)
@@ -108,8 +112,12 @@ browse_assessment <- function(x) {
                                    if (substr(f, 1, 10) == "data:image") {
                                      s2 <- list(shiny::img(src = f))
                                    } else {
-                                     s2 <- list(HTML(f))
+                                     s2 <- list(shiny::HTML(f))
                                    }
+                                 }
+                                 s2a <- list()
+                                 if (hf != "") {
+                                   s2a <- list(shiny::includeHTML(hf))
                                  }
                                  s3 <- list(shiny::textAreaInput(uname("fbk",
                                                                        x, t),
@@ -119,7 +127,7 @@ browse_assessment <- function(x) {
                                             purrr::map2(v[["var"]], v[["value"]],
                                                         ~ shiny::checkboxInput(uname("ci", x, t, .x),
                                                                                .x, .y)))
-                                 c(s1, s2, s3)
+                                 c(s1, s2, s2a, s3)
                                })
           do.call(shiny::tagList, purrr::flatten(ilist))
         })

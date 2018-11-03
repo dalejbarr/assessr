@@ -53,6 +53,7 @@ tangle <- function(filename, inline_code = FALSE, documentation = 1L) {
 #' @param overwrite overwrite \code{solution} directory if it exists?
 #' @param workdir working directory
 #' @param savefig save any files created in solution subdirectory?
+#' @param preseed Named list of seeds to be passed to \code{set.seed} before running each solution code chunk. The element names should match the assessment and solution code chunk names.
 #' @details Sets up environments for running submission code and
 #'   assessment code.  Also creates output/plots when appropriate and
 #'   stores them in the \code{solution} subdirectory in the current
@@ -61,7 +62,7 @@ tangle <- function(filename, inline_code = FALSE, documentation = 1L) {
 #' @seealso \code{\link{tangle}}
 #' @export
 compile_key <- function(s_file, a_file, overwrite = FALSE,
-                        workdir = NULL, save_fig = TRUE) {
+                        workdir = NULL, save_fig = TRUE, preseed = NULL) {
   search_pre <- search()
   
   a_chunks <- tangle(a_file)
@@ -70,6 +71,8 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
     stop("triple underscore '___' not allowed in code block names")
   }
 
+  preseed <- validate_preseed(preseed, tasks)
+  
   ##browser()
   sol_chunks <- tangle(s_file)
   missing <- setdiff(tasks, names(sol_chunks))
@@ -120,16 +123,37 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
     
     to_run <- setdiff((lastchunk + 1L):tasks_ix[i], tasks_ix[i])
     todo <- paste(unlist(sol_chunks[to_run]), collapse = "\n")
+
+    ## run everything up to but not including the assessed task
+    if (length(todo) > 1L) {
+      evaluate::evaluate(todo[-length(todo)],
+                         envir = this_env, new_device = FALSE,
+                         stop_on_error = 0L)
+    }
+    
+    ## check whether to set the seed before the assessed task
+    if (to_run[length(to_run)] %in% tasks_ix) {
+      ## save it
+      this_task <- names(sol_chunks)[to_run[length(to_run)]]
+      if (!is.null(preseed[[this_task]])) {
+        set.seed(preseed[[this_task]])
+      }
+    }
     
     imgfile <- tempfile(fileext = ".png")
     png(imgfile)
-    res <- evaluate::evaluate(todo, envir = this_env, new_device = FALSE,
-                              stop_on_error = 0L)
+    res <- evaluate::evaluate(todo[length(todo)],
+                       envir = this_env, new_device = FALSE,
+                       stop_on_error = 0L)
     dev.off()
+
+    
     if (file.exists(imgfile) && save_fig) {      
       if (to_run[length(to_run)] %in% tasks_ix) {
         ## save it
         this_task <- names(sol_chunks)[to_run[length(to_run)]]
+        if (!is.null(preseed[[this_task]]))
+          browser()
         if (this_task %in% names(figlist)) {
           imgoutfile <- file.path("solution", paste(this_task, "png", sep = "."))
           file.copy(imgfile, imgoutfile, overwrite = overwrite)

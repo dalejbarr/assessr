@@ -1,3 +1,20 @@
+validate_preseed <- function(preseed, tasks) {
+  if (is.null(preseed)) {
+    preseed <- list()
+  } else {
+    if (is.null(names(preseed)))
+      stop("'preseed' must be a named list")
+    ## check that names match assessment code chunk names
+    if (length(diffnames <- setdiff(names(preseed), tasks)) > 0L) {
+      stop("Names of 'preseed' argument must match assessment code chunk names.",
+           "\n  Offending name(s):\n    ", paste(diffnames, collapse = "', '"), "'")
+    }
+    if (!is.numeric(unlist(preseed)))
+      stop("preseed values must be numeric")
+  }
+  preseed
+}
+
 figdir <- function(sub_id, trailing = FALSE) {
   fdir <- file.path("submission_figs", sub_id)
 }
@@ -89,10 +106,12 @@ safe_eval <- function(this_code, this_env, new_device) {
 #'   environments will be ignored.
 #' @param workdir the working directory in which to evaluate the code
 #' @param seed starting seed for random number generation (or NULL to not set the seed)
+#' @param preseed A named list whose names are the task names and whose elements are the RNG seeds to set prior to the task.
 #' @return A table
 #' @export
 assess <- function(filename, sub_id = filename, key,
-                   use_sub_env = TRUE, workdir = NULL, seed = NULL) {
+                   use_sub_env = TRUE, workdir = NULL, seed = NULL,
+                   preseed = NULL) {
   search_pre <- search()
   
   sub_chunks <- tangle(filename)
@@ -113,6 +132,8 @@ assess <- function(filename, sub_id = filename, key,
   if (!is.null(seed)) {
     set.seed(seed)
   }
+
+  preseed <- validate_preseed(preseed, key[["task"]])
   
   res <- purrr::map(key[["task"]], function(x) {
     ##if (x == "P5") browser()
@@ -121,8 +142,8 @@ assess <- function(filename, sub_id = filename, key,
       ## use a copy so that things are fresh for each submission
       this_env <- new.env(parent = key[["start_env"]][[x]])
     } else {
-      #########################################
-      ## TODO: run any intervening blocks here
+      ## #######################################
+      ## run intervening blocks
       code_cur <- which(names(sub_chunks) == x)
       if (length(code_cur)) {  ## it exists
         ## what are the names of sub_chunks previous to this one
@@ -159,7 +180,8 @@ assess <- function(filename, sub_id = filename, key,
           })
         }
       }
-    } ##############################################
+    }
+    ## ###########################################
     ## now any intervening blocks will have run
 
     ## create the list to contain assessment params
@@ -171,6 +193,10 @@ assess <- function(filename, sub_id = filename, key,
     ## ff$result <- assess_task(sub_id, x, sub_chunks,
     ##                         key[["a_code"]][[x]], this_env, use_sub_env)
     ## ff$error <- NULL
+    if (!is.null(preseed[[x]])) {
+      set.seed(preseed[[x]])
+    }
+    
     ff <- safely_assess_task(sub_id, x, sub_chunks,
                              key[["a_code"]][[x]],
                              this_env,
