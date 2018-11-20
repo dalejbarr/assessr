@@ -631,6 +631,37 @@ chr_vecs_equal <- function(subvar, sol_env, solvar = subvar,
   res
 }
 
+#' Are logical values the same?
+#'
+#' @param subvar name of variable in submission environment
+#' @param sol_env solution environment
+#' @param solvar name of solution variable
+#' @param add whether to add feedback
+#' @return logical
+#' @export
+lgl_vals_equal <- function(subvar, sol_env, solvar = subvar, add = TRUE) {
+  ## make sure solution variable is length 1 vector
+  svar <- get(solvar, envir = sol_env, inherits = FALSE)
+  if (length(svar) != 1L)
+    stop("solution variable must be a vector of length one")
+  ff <- lgl_vecs_equal(subvar, sol_env, solvar, add = FALSE)
+  result <- FALSE
+  if (!ff[["lengths_match"]]) {
+    add_feedback("* variable `", subvar, "` was not a vector of length 1",
+                 add = add)
+  } else {
+    if (!ff[["vals_match"]]) {
+      add_feedback("* variable `", subvar, "` did not match the solution",
+                   add = add)
+    } else {
+      add_feedback("* variable `", subvar, "` matched the solution",
+                   add = add)
+      result <- TRUE
+    }
+  }
+  result
+}
+
 #' Are logical vectors equal?
 #'
 #' @param subvar name of variable in submission environment
