@@ -631,36 +631,6 @@ chr_vecs_equal <- function(subvar, sol_env, solvar = subvar,
   res
 }
 
-#' Are logical values the same?
-#'
-#' @param subvar name of variable in submission environment
-#' @param sol_env solution environment
-#' @param solvar name of solution variable
-#' @param add whether to add feedback
-#' @return logical
-#' @export
-lgl_vals_equal <- function(subvar, sol_env, solvar = subvar, add = TRUE) {
-  ## make sure solution variable is length 1 vector
-  svar <- get(solvar, envir = sol_env, inherits = FALSE)
-  if (length(svar) != 1L)
-    stop("solution variable must be a vector of length one")
-  ff <- lgl_vecs_equal(subvar, sol_env, solvar, add = FALSE)
-  result <- FALSE
-  if (!ff[["lengths_match"]]) {
-    add_feedback("* variable `", subvar, "` was not a vector of length 1",
-                 add = add)
-  } else {
-    if (!ff[["vals_match"]]) {
-      add_feedback("* variable `", subvar, "` did not match the solution",
-                   add = add)
-    } else {
-      add_feedback("* variable `", subvar, "` matched the solution",
-                   add = add)
-      result <- TRUE
-    }
-  }
-  result
-}
 
 #' Are logical vectors equal?
 #'
@@ -832,4 +802,143 @@ attempted <- function(subvar, add = TRUE) {
     add_feedback("* No attempt", add = add)
   }
   res
+}
+
+
+#' Safely return object
+#'
+#' @param object name of variable
+#' @param classes type of object
+#' @return a list with elements \code{obj}, the object (if it exists, NULL otherwise), \code{exists} (TRUE if it does, FALSE if not), \code{type} (TRUE if object is of type 'class', otherwise FALSE), and \code{message}, a character vector describing any errors (or NULL on success)
+#' @export
+sget <- function(.obj, .class, env) {
+  .retobj <- NULL
+  .exists <- FALSE
+  .type <- NA
+  .message <- c("")
+  if (exists(.obj, envir = env, inherits = FALSE)) {
+    .retobj <- get(.obj, envir = env, inherits = FALSE)
+    .exists <- TRUE
+    if (inherits(.retobj, .class)) {
+      .type <- TRUE
+    } else {
+      .retobj <- NULL
+      .type <- FALSE
+      .message <- paste0("* object `", .obj, "` was not of type '",
+                         .class, "'")
+    }
+  } else {
+    .message <- paste0("* object `", .obj, "` not found")
+  }
+  list(obj = .retobj, exists = .exists, type = .type,
+       message = as.character(.message))
+}
+
+#' Are logical values the same?
+#'
+#' @param subvar name of variable in submission environment
+#' @param sol_env solution environment
+#' @param solvar name of solution variable
+#' @param add whether to add feedback
+#' @return logical
+#' @export
+lgl_vals_equal <- function(subvar, sol_env, solvar = subvar, add = TRUE) {
+  result <- FALSE
+  ## make sure solution variable is length 1 vector
+  sol_lgl <- sget(solvar, "logical", sol_env)
+  if (is.null(sol_lgl))
+    stop("solution variable `", solvar, "` was not of type 'logical'")
+  if (length(sol_lgl$obj) != 1L)
+    stop("solution variable `", solvar, "` was not of length 1")
+  sub_lgl <- sget(subvar, "logical", parent.frame())
+  if (is.null(sub_lgl$obj)) {
+    add_feedback(sub_lgl$message, add = add)
+  } else {
+    if (sol_lgl$obj == sub_lgl$obj) {
+      result <- TRUE
+      add_feedback("variable `", subvar, "` matched the solution", add = add)
+    } else {
+      add_feedback("variable `", subvar, "` did not match the solution",
+                   add = add)
+    }
+  }
+  result
+}
+
+#' Safely determine variable type
+#'
+#' @param subvar Name of submission variable
+#' @param class Class of submission variable
+#' @return logical: TRUE if 'subvar' is of type 'class'
+#' @export
+is_type <- function(subvar, class) {
+  res <- sget(subvar, class, parent.frame())
+  res$type
+}
+
+#' Test set difference
+#'
+#' Does the difference in elements between first set x and second set
+#' y correspond to vector v?
+#' 
+#' @param x First set
+#' @param y Second set
+#' @param v Difference vector
+#' @return logical
+#' @export
+setextra <- function(x, y, v) {
+  res <- base::setdiff(x, y)
+  if (length(res) == 0) {
+    FALSE
+  } else {
+    base::setequal(res, v)
+  }
+}
+
+#' Test difference in model (fixed effects) terms
+#'
+#' @param First model
+#' @param Second model
+#' @param Difference vector
+#' @return logical
+#' @details See whether two models differ in fixed effects terms. This can be tricky because interaction terms that are ordered differently (\code{x:y} and \code{y:x}) should be treated as identical. Any interactions will always be returned sorted in alphabetical order.
+#' @export
+setextra_mod <- function(x, y, v) {
+  recomb <- function(.x) paste(sort(.x), collapse = ":")
+
+  lx <- strsplit(labels(terms(x)), ":")
+  ly <- strsplit(labels(terms(y)), ":")
+
+  omitted_in_ly <- !sapply(lx, function(.x) {
+    any(sapply(ly, base::setequal, .x))
+  })
+
+  lv <- strsplit(v, ":")
+  lv2 <- sapply(lv, recomb)
+  omt <- sapply(lx[omitted_in_ly], recomb)
+
+  base::setequal(lv2, omt)
+}
+
+#' List all compiled html files
+#'
+#' List all html files compiled from RMarkdown
+#'
+#' @param subdir subdirectory in which to scan for html files
+#' @param with_moodle_id extract the moodle identifier
+#' @return if \code{with_moodle_id} is \code{FALSE}, returns a vector
+#'   with paths to submission files; if \code{TRUE}, a table with
+#'   submission id and filename.
+#' @export
+list_compiled <- function(subdir,
+                          with_moodle_id = FALSE) {
+  files <- list.files(sub("/$", "", subdir),
+                      "\\.html$", full.names = TRUE,
+                      recursive = TRUE)
+  if (with_moodle_id) {
+    tibble::tibble(sub_id = moodle_id(files),
+                   filename = files)
+  } else {
+    files
+  }
 }

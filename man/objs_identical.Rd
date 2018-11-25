@@ -4,12 +4,14 @@
 \alias{objs_identical}
 \title{Are objects identical}
 \usage{
-objs_identical(subobj, sol_env, add = TRUE)
+objs_identical(subobj, sol_env, solobj = subobj, add = TRUE)
 }
 \arguments{
 \item{subobj}{name of submission object}
 
 \item{sol_env}{solution environment}
+
+\item{solobj}{name of solution object}
 
 \item{add}{add feedback}
 }

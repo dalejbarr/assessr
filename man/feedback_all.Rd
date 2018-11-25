@@ -5,8 +5,8 @@
 \title{Produce feedback reports}
 \usage{
 feedback_all(ares, template, subdir = "feedback_reports", overwrite = FALSE,
-  quiet = TRUE, extra_params = NULL, long_line_cutoff = 75,
-  empty_fbk = "* no issues", stop_after = -1L)
+  quiet = TRUE, extra_params = NULL, empty_fbk = "* no issues",
+  stop_after = -1L)
 }
 \arguments{
 \item{ares}{assessment result}
@@ -20,8 +20,6 @@ feedback_all(ares, template, subdir = "feedback_reports", overwrite = FALSE,
 \item{quiet}{'quiet' option for rmarkdown::render}
 
 \item{extra_params}{any extra parameters to pass to report (will appear in params$extra)}
-
-\item{long_line_cutoff}{reformat chunks where any single line is longer than this value (-1 = don't reformat)}
 
 \item{empty_fbk}{default feedback (when \code{fbk} field is empty)}
 

@@ -5,7 +5,7 @@
 \title{Compile the assessment key}
 \usage{
 compile_key(s_file, a_file, overwrite = FALSE, workdir = NULL,
-  save_fig = TRUE)
+  save_fig = TRUE, preseed = NULL)
 }
 \arguments{
 \item{s_file}{name of Rmd solution file}
@@ -15,6 +15,8 @@ compile_key(s_file, a_file, overwrite = FALSE, workdir = NULL,
 \item{overwrite}{overwrite \code{solution} directory if it exists?}
 
 \item{workdir}{working directory}
+
+\item{preseed}{Named list of seeds to be passed to \code{set.seed} before running each solution code chunk. The element names should match the assessment and solution code chunk names.}
 
 \item{savefig}{save any files created in solution subdirectory?}
 }

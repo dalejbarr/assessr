@@ -5,7 +5,7 @@
 \title{Assess a submission}
 \usage{
 assess(filename, sub_id = filename, key, use_sub_env = TRUE,
-  workdir = NULL, seed = NULL)
+  workdir = NULL, seed = NULL, preseed = NULL)
 }
 \arguments{
 \item{filename}{name of submission file}
@@ -24,6 +24,8 @@ environments will be ignored.}
 \item{workdir}{the working directory in which to evaluate the code}
 
 \item{seed}{starting seed for random number generation (or NULL to not set the seed)}
+
+\item{preseed}{A named list whose names are the task names and whose elements are the RNG seeds to set prior to the task.}
 }
 \value{
 A table

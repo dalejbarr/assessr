@@ -214,3 +214,29 @@ browse_assessment <- function(x) {
   viewer <- shiny::browserViewer()
   shiny::runGadget(ui, server, viewer = viewer)
 }
+
+#' Browse inline responses in shiny app
+#'
+#' @param htbl Data frame with two columns, \code{sub_id} (submission id) and \code{filename}, name of html file.
+#' @param start_delim Delimiter for html comment starting text block (regular expression)
+#' @param end_delim Delimiter for html comment ending text block (regular expression)
+#' @param outfile Name of output file to write response data to.
+#' @param overwrite Whether to overwrite the output file if it already exists.
+#' @export
+browse_inline <- function(htbl,
+                          start_delim = "START HERE.*",
+                          end_delim = "END HERE.*",
+                          outfile = "inline_scores.rds",
+                          overwrite = FALSE) {
+  if (nrow(htbl) == 0L) {
+    stop("No html files found. You must compile them first. See 'compile_all()'.")
+  }
+  
+  message("Scraping html from ", nrow(htbl), " html files...")
+  htbl$html <- lapply(htbl$filename,
+                      extract_html_comment, start_delim, end_delim)
+
+  message("Running shiny app...")
+  shiny::shinyOptions(outfile = outfile, htbl = htbl)
+  source(system.file("inline", "app.R", package = "assessr"), local = TRUE)$value
+}
