@@ -797,9 +797,12 @@ attempted <- function(subvar, add = TRUE) {
   if (exists(subvar, envir = parent.frame(), inherits = FALSE)) {
     sub_var <- get(subvar, envir = parent.frame(), inherits = FALSE)
     res <- !is.null(sub_var)
-  }
-  if (!res) {
-    add_feedback("* No attempt", add = add)
+    if (!res) {
+      add_feedback("* No attempt", add = add)
+    }
+  } else {
+    res <- FALSE
+    add_feedback("* variable `", subvar, "` not defined", add = add)
   }
   res
 }
@@ -941,4 +944,148 @@ list_compiled <- function(subdir,
   } else {
     files
   }
+}
+
+## sort interaction terms
+sort_ix_terms <- function(x) {
+  sapply(lapply(strsplit(x, ":"), sort), paste, collapse = ":")
+}
+
+rectify_dimnames <- function(mx) {
+  names(dimnames(mx)) <- NULL
+  dimnames(mx) <- lapply(dimnames(mx), as.character)
+  dimnames(mx)
+}
+
+## turn lme4:::findbars() into a formula
+form_fixed_match_intern <- function(subf, solf, subvar = NULL, add = FALSE) {
+  res <- FALSE
+  subff <- lme4:::nobars(subf)
+  solff <- lme4:::nobars(solf)
+
+  ## do RHS terms match?
+  labsub <- attr(terms(subff), "term.labels")
+  names(labsub) <- sort_ix_terms(labsub)
+  labsub <- sort(labsub)
+  labsol <- attr(terms(solff), "term.labels")
+  names(labsol) <- sort_ix_terms(labsol)
+  labsol <- sort(labsol)
+  tmatch <- setequal(names(labsub), names(labsol))
+  if (!tmatch) {
+    add_feedback("* `", subvar, "` had different fixed effects terms than solution", add = add)
+  } else {
+    submx <- attr(terms(subff), "factors")
+    solmx <- attr(terms(solff), "factors")
+    if ((length(submx) == 0) || length(solmx) == 0) { # intercept only
+      if (length(submx) == length(solmx)) {
+        res <- TRUE
+      } else {
+        add_feedback("* `", subvar, "` had different fixed effects terms than solution", add = add)
+      }
+    } else {
+      colnames(submx) <- sort_ix_terms(colnames(submx))
+      colnames(solmx) <- sort_ix_terms(colnames(solmx))
+      dnmatch <- all(mapply(setequal, dimnames(submx), dimnames(solmx)))
+      if (dnmatch) {
+        dimnames(submx) <- rectify_dimnames(submx)
+        dimnames(solmx) <- rectify_dimnames(solmx)
+        mxmatch <- isTRUE(all.equal(submx, solmx[dimnames(submx)[[1]],
+                                                 dimnames(submx)[[2]],
+                                                 drop = FALSE]))
+      }
+      if (!(dnmatch && mxmatch)) {
+        add_feedback("* `", subvar, "` had different fixed effects structure than solution", add = add)
+      } else {
+        res <- TRUE
+      }
+    }
+  }
+  res
+}
+
+#' Do fixed terms in formula match?
+#'
+#' @param subvar Name of submission variable containing formula.
+#' @param solenv Name of solution environment.
+#' @param solvar Name of solution variable.
+#' @param add Whether to add feedback.
+#' @details Can handle regular linear model formulae (\code{Y ~ X}) as well as mixed effects models (\code{Y ~ X + (X | subject)}).
+#' @return logical
+#' @export
+form_fixed_match <- function(subvar, solenv, solvar = subvar, 
+                             add = TRUE) {
+  res <- FALSE
+  if (inherits(subvar, "formula")) {
+    add_feedback("* `", subvar, "` was not of type 'formula'", add = add)
+  } else {
+    subf <- get(subvar, envir = parent.frame(), inherits = FALSE)
+    solf <- get(solvar, envir = solenv)
+    res <- form_fixed_match_intern(subf, solf, subvar, add)
+  }
+  if (res) {
+    add_feedback("* fixed effects part was correct", add = add)
+  }
+  res
+}
+
+#' Do random terms in formula match?
+#'
+#' @param subvar Name of submission variable containing formula.
+#' @param solenv Name of solution environment.
+#' @param solvar Name of solution variable.
+#' @param add Whether to add feedback.
+#' @details Can handle regular linear model formulae (\code{Y ~ X}) as well as mixed effects models (\code{Y ~ X + (X | subject)}).
+#' @return logical
+#' @export
+form_rand_match <- function(subvar, solenv, solvar = subvar, 
+                             add = TRUE) {
+  res <- FALSE
+  if (inherits(subvar, "formula")) {
+    add_feedback("* `", subvar, "` was not of type 'formula'", add = add)
+  } else {
+    subf <- get(subvar, envir = parent.frame(), inherits = FALSE)
+    solf <- get(solvar, envir = solenv)
+    if (!lme4:::anyBars(solf)) {
+      stop("formula did not have random effects")
+    }
+    if (!lme4:::anyBars(subf)) {
+      add_feedback("* `", subvar, "` did not have any random effects terms",
+                   add = add)
+    } else {
+      ## got here; there are terms. check them
+      subb <- sort(sapply(lme4:::findbars(subf), deparse))
+      solb <- sort(sapply(lme4:::findbars(solf), deparse))
+      if (length(subb) == length(solb)) {
+        ## same length; parse out the bars
+        sub_unit <- stringr::str_trim(sapply(strsplit(subb, "\\|+"), `[[`, 2L))
+        sol_unit <- stringr::str_trim(sapply(strsplit(solb, "\\|+"), `[[`, 2L))
+        if (any(duplicated(sub_unit))) {
+          add_feedback("* same sampling unit appears more than once in random effects term", add = add)
+        } else {
+          if (!setequal(sub_unit, sol_unit) || (length(sub_unit) != length(sol_unit))) {
+            add_feedback("* different sampling units in random effects terms from solution",
+                         add = add)
+          } else {
+            sub_fstr <- paste0("DV ~ ", sapply(strsplit(subb, "\\|+"), `[[`, 1L))
+            names(sub_fstr) <- sub_unit
+            sol_fstr <- paste0("DV ~ ", sapply(strsplit(solb, "\\|+"), `[[`, 1L))
+            names(sol_fstr) <- sol_unit
+            sub_fstr2 <- sapply(sub_fstr, as.formula)
+            sol_fstr2 <- sapply(sol_fstr, as.formula)
+            res <- all(mapply(form_fixed_match_intern,
+                              sub_fstr2, sol_fstr2[names(sub_fstr2)]))
+            if (!res)
+              add_feedback("* random effects structure did not match solution",
+                           add = add)
+          }
+        }
+      } else {
+        add_feedback("* different number of random effect terms than solution",
+                     add = add)
+      }
+    }
+  }
+  if (res)
+    add_feedback("* random effects terms were correct", add = add)
+  res
 }
