@@ -876,7 +876,7 @@ lgl_vals_equal <- function(subvar, sol_env, solvar = subvar, add = TRUE) {
 #' @export
 is_type <- function(subvar, class) {
   res <- sget(subvar, class, parent.frame())
-  res$type
+  if (is.na(res$type)) FALSE else res$type
 }
 
 #' Test set difference
