@@ -369,7 +369,8 @@ assessment_code <- function(s_file, o_file = "assess_code.Rmd",
 #' @param sub_id subject identifies (vector same length as \code{dirname})
 #' @param use_sub_env process submission code in the submission environment (\code{FALSE} to process it in the solution environment)
 #' @param workdir working directory
-#' @param seed random seed
+#' @param seed random seed to set at the beginning
+#' @param preseed Named list with random seed to set before each (named) block.
 #' @param stop_after stop processing after completing N files
 #' @return a dataframe with the assessment variables and their values
 #' @export 
@@ -379,6 +380,7 @@ assess_all <- function(dirname,
                        use_sub_env = TRUE,
                        workdir = NULL,
                        seed = NULL,
+                       preseed = NULL,
                        stop_after = -1L) {
   todo <- list_submissions(dirname)
   if (stop_after != -1L) {
@@ -389,6 +391,6 @@ assess_all <- function(dirname,
                  function(.x, .y, .z) {
                    message("Processing ", .z, " of ", length(todo), " (",
                            .y, ")")
-                   assess(.x, .y, key, use_sub_env, workdir, seed)
+                   assess(.x, .y, key, use_sub_env, workdir, seed, preseed)
                  })
 }

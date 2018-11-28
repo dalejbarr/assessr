@@ -5,7 +5,8 @@
 \title{Assess all files in a directory}
 \usage{
 assess_all(dirname, key, sub_id = moodle_id(list_submissions(dirname)),
-  use_sub_env = TRUE, workdir = NULL, seed = NULL, stop_after = -1L)
+  use_sub_env = TRUE, workdir = NULL, seed = NULL, preseed = NULL,
+  stop_after = -1L)
 }
 \arguments{
 \item{dirname}{name of the directory containing the submission files}
@@ -18,7 +19,9 @@ assess_all(dirname, key, sub_id = moodle_id(list_submissions(dirname)),
 
 \item{workdir}{working directory}
 
-\item{seed}{random seed}
+\item{seed}{random seed to set at the beginning}
+
+\item{preseed}{Named list with random seed to set before each (named) block.}
 
 \item{stop_after}{stop processing after completing N files}
 }
