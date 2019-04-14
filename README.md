@@ -1,7 +1,5 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<link href="inst/reports/default/webex.css" rel="stylesheet" />
-
 The assessr package
 ===================
 
@@ -19,7 +17,11 @@ Each assignment takes the form of an RMarkdown 'stub' file that contains problem
 
     ## Problem 1
 
-    R contains the built-in object `letters`, a character vector whose elements are the lowercase letters of the alphabet in alphabetic order. Write code to extract elements from `letters` using integers so that the resulting character vector spells the word "magic", i.e., `"m", "a", "g", "i", "c"`.
+    R contains the built-in object `letters`, a character vector whose
+    elements are the lowercase letters of the alphabet in alphabetic
+    order. Write code to extract elements from `letters` using integers so
+    that the resulting character vector spells the word "magic", i.e.,
+    `"m", "a", "g", "i", "c"`.
 
 <pre><code>```{r problem-1}
 answer <- NULL
