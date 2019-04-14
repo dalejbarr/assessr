@@ -45,9 +45,9 @@ The student would then replace `NULL` with code to produce the answer; in this c
 
 The full instructor workflow cycle for a single assignment in assessr is as follows.
 
-1. Create an RMarkdown *stub* file with each problem offset by a level-2 header, with problem descriptions and target variables defined in code chunks as `NULL`. Each code chunk must have a unique name. An example stub file is given at `system.file()`.
+1. Create an RMarkdown *stub* file with each problem offset by a level-2 header, with problem descriptions and target variables defined in code chunks as `NULL`. Each code chunk must have a unique name.
 
-2. Create an RMarkdown *assessment code* file with code chunks containing assessment code. The name of each code chunk should correspond with the names given in the stub file. Assessment variables are defined here used in calculating grades.
+2. Create an RMarkdown *assessment code* file with code chunks containing assessment code. The name of each code chunk should have the name given to the corresponding chunk in the stub file. Assessment variables are defined in each chunk as named elements of a hidden object `.ar` (e.g., `.ar$is_correct <- TRUE`). These variables are later used in calculating grades.
 
 3. Create a subdirectory that contains all submitted assignments. Each submission should be an RMarkdown file, ending with the `.Rmd` extension.
 
