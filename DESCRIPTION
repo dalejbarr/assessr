@@ -1,23 +1,34 @@
 Package: assessr
-Title: What the Package Does (one line, title case)
-Version: 0.0.0.9600
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph)
+Title: Computer-aided generation and assessment of R assignments
+Version: 0.1.0.9000
+Date: 2019-04-14
+Authors@R: person("Dale", "Barr", email = "dalejbarr@protonmail.com", role = c("aut", "cre"))
+Description: The assessr package makes it easy for instructors to
+    generate and assess randomized R assignments. Assignments are
+    RMarkdown 'stub' files that are distributed to students. Students
+    fill in code and return the files to the instructor for
+    assessment. The instructor runs automated assessment on the files
+    and then uses a shiny app to moderate the results. Finally, HTML
+    feedback files are generated that can be distributed to students.
 Depends: R (>= 3.4.2)
-License: What license is it under?
+License: CC BY-SA 4.0
 LazyData: true
-Imports: knitr,
+Imports: 
+    knitr,
     evaluate,
     purrr,
     tibble,
     tidyr,
     dplyr,
+    magrittr,
     base64enc,
     rmarkdown,
     stringr,
     getPass,
     httr,
     lme4,
-    broom
-RoxygenNote: 6.0.1
+    broom,
+    miniUI,
+    shiny
+RoxygenNote: 6.1.1
 Suggests: testthat

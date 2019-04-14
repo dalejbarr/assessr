@@ -1,0 +1,48 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+<link href="inst/reports/default/webex.css" rel="stylesheet" />
+
+The assessr package
+===================
+
+The assessr package is designed to enable R instructors to more efficently generate and assess student assignments. Assignments are RMarkdown 'stub' files that are distributed to students. Students fill in code and return the files to the instructor for assessment. The instructor runs automated assessment on the files and then uses a shiny app to moderate the results. Finally, HTML feedback files are generated that can be distributed to students.
+
+WARNING: This is an archival version
+------------------------------------
+
+This is a fairly stable version of assessr used internally at the University of Glasgow Psychology department in 2018-2019. Documentation is minimal. It is included here for archival purposes. The code is currently being re-factored on a new branch for public distribution, and we anticipate releasing a vastly improved version by summer 2019. Feel free to play around with this version, but beware: **breaking changes are coming!**
+
+The assessr approach
+--------------------
+
+Each assignment takes the form of an RMarkdown 'stub' file that contains problem descriptions and code chunks where target variables are defined as `NULL`. For example:
+
+    ## Problem 1
+
+    R contains the built-in object `letters`, a character vector whose elements are the lowercase letters of the alphabet in alphabetic order. Write code to extract elements from `letters` using integers so that the resulting character vector spells the word "magic", i.e., `"m", "a", "g", "i", "c"`.
+
+<pre><code>```{r problem-1}
+answer <- NULL
+```</code></pre>
+The student would then replace `NULL` with code to produce the answer; in this case, `letters[c(13, 1, 7, 9, 3)]`.
+
+The assessr workflow
+--------------------
+
+The full instructor workflow cycle for a single assignment in assessr is as follows.
+
+1.  Create an RMarkdown *stub* file with each problem offset by a level-2 header, with problem descriptions and target variables defined in code chunks as `NULL`. Each code chunk must have a unique name. An example stub file is given at `system.file()`.
+
+2.  Create an RMarkdown *assessment code* file with code chunks containing assessment code. The name of each code chunk should correspond with the names given in the stub file. Assessment variables are defined here used in calculating grades.
+
+3.  Create a subdirectory that contains all submitted assignments. Each submission should be an RMarkdown file, ending with the `.Rmd` extension.
+
+4.  Run `assessr::assess_all()` on the subdirectory. This will return assessment results in the form of a tibble (a tidyverse data frame).
+
+5.  Moderate the results using a built-in shiny app, the *assessment browser*, which is activated by `assessr::browse_assessment()`. This returns an updated version of the assessment tibble.
+
+6.  Create an RMarkdown *feedback template*. This is a parameterized RMarkdown report that displays student code alongside the solution and any instructor feedback.
+
+7.  Run `assessr::feedback_all()` on the assessment result tibble to generate HTML files for distribution to students.
+
+8.  Inspect the assessment variables in the assessment result tibble and calculate grades.

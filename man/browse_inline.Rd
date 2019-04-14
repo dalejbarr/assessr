@@ -4,8 +4,9 @@
 \alias{browse_inline}
 \title{Browse inline responses in shiny app}
 \usage{
-browse_inline(htbl, start_delim = "START HERE.*", end_delim = "END HERE.*",
-  outfile = "inline_scores.rds", overwrite = FALSE)
+browse_inline(htbl, start_delim = "START HERE.*",
+  end_delim = "END HERE.*", outfile = "inline_scores.rds",
+  overwrite = FALSE)
 }
 \arguments{
 \item{htbl}{Data frame with two columns, \code{sub_id} (submission id) and \code{filename}, name of html file.}

@@ -4,9 +4,9 @@
 \alias{feedback_all}
 \title{Produce feedback reports}
 \usage{
-feedback_all(ares, template, subdir = "feedback_reports", overwrite = FALSE,
-  quiet = TRUE, extra_params = NULL, empty_fbk = "* no issues",
-  stop_after = -1L)
+feedback_all(ares, template, subdir = "feedback_reports",
+  overwrite = FALSE, quiet = TRUE, extra_params = NULL,
+  empty_fbk = "* no issues", stop_after = -1L)
 }
 \arguments{
 \item{ares}{assessment result}
