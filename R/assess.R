@@ -215,13 +215,13 @@ assess <- function(filename, sub_id = filename, key,
   restore_search_path(search_pre)
   
   tibble::enframe(res, "task") %>%
-    tidyr::unnest() %>%
-      dplyr::mutate(sub_id = sub_id, filename = filename,
-                    code = sub_chunks[key[["task"]]]) %>%
-      dplyr::select(sub_id, task, vars:fbk, err, code, filename) %>%
-      dplyr::mutate(fbk = purrr::map_chr(fbk, function(x) {
-        paste(unique(strsplit(x, "\n")[[1]]), collapse = "\n")
-      }))
+    tidyr::unnest("value") %>%
+    dplyr::mutate(sub_id = sub_id, filename = filename,
+                  code = sub_chunks[key[["task"]]]) %>%
+    dplyr::select(sub_id, task, vars:fbk, err, code, filename) %>%
+    dplyr::mutate(fbk = purrr::map_chr(fbk, function(x) {
+      paste(unique(strsplit(x, "\n")[[1]]), collapse = "\n")
+    }))
 }
 
 #' Assess individual task
