@@ -5,7 +5,7 @@
 \title{Are character vectors equal?}
 \usage{
 chr_vecs_equal(subvar, sol_env, solvar = subvar, ignore_order = FALSE,
-  add = TRUE)
+  ignore_case = FALSE, add = TRUE)
 }
 \arguments{
 \item{subvar}{name of variable in submission environment}
@@ -15,6 +15,8 @@ chr_vecs_equal(subvar, sol_env, solvar = subvar, ignore_order = FALSE,
 \item{solvar}{name of solution variable}
 
 \item{ignore_order}{whether to ignore the ordering}
+
+\item{ignore_case}{whether to ignore the case}
 
 \item{add}{whether to add feedback}
 }
