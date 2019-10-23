@@ -31,4 +31,5 @@ Imports:
     miniUI,
     shiny
 RoxygenNote: 6.1.1
-Suggests: testthat
+Suggests: 
+    testthat (>= 2.1.0)

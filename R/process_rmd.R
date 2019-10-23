@@ -228,6 +228,20 @@ apply_blacklist <- function(subfile, overwrite = TRUE) {
       }
     }
   }
+  
+  ## detect duplicate chunk names
+  dupelist <- purrr::map_chr(chunk_0, function(c0) {
+    x <- lines[c0]
+    m <- regexec("^```\\{r\\s*([^,}]*)", x)
+    mtch <- regmatches(x, m)
+    mtch[[1]][2]
+  })
+  
+  if (anyDuplicated(dupelist) > 0) {
+    warning(msg, "Duplicate chunk names: ", 
+            paste(dupelist[duplicated(dupelist)], collapse = ", "), "\n")
+  }
+
   fb_regx <- get_blacklist()[["regex"]]
 
   ## check the chunks
@@ -245,7 +259,11 @@ apply_blacklist <- function(subfile, overwrite = TRUE) {
   })
 
   ## now comment out the bad functions
-  newchk <- purrr::pmap(list(chunk_0, chunk_1, blist), function(c0, c1, b) {
+  newchk <- purrr::pmap(list(chunk_0, chunk_1, blist, duplicated(dupelist)), function(c0, c1, b, dupe) {
+    if (dupe) {
+      lines[c0] <- gsub("^```\\{r\\s*([^,}]*)", "```\\{r", lines[c0])
+    }
+    
     if (purrr::some(b, ~ !is.null(.x))) {
       lmid <- lines[(c0 + 1L):(c1 - 1L)]
       lfix <- purrr::map2_chr(b, lmid, function(fs, ll) {

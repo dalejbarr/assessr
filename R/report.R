@@ -199,7 +199,7 @@ feedback_report_pdf <- function(d,
   
   credit_tbl <- 
     d[, c("task", "vars")] %>%
-    tidyr::unnest() %>%
+    tidyr::unnest("vars") %>%
     dplyr::group_by(task) %>%
     dplyr::summarise(credit = dplyr::case_when(sum(value) == n() ~ "Full",
                                                sum(value) > 0 ~ "Partial",

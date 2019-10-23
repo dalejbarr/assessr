@@ -176,7 +176,7 @@ browse_assessment <- function(x) {
           dplyr::mutate(value = purrr::map_lgl(ci_ix, ~ `[[`(input, .x)))
         orig_data <- ares %>%
           dplyr::select(sub_id, task, vars) %>%
-          tidyr::unnest()
+          tidyr::unnest("vars")
           new_vals <- dplyr::setdiff(res, orig_data)
           vars <- dplyr::bind_rows(dplyr::anti_join(orig_data, new_vals,
                                                     c("sub_id", "task", "var")),

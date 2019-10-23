@@ -589,13 +589,15 @@ fun_exists <- function(fnname, add = TRUE) {
 #' @param sol_env solution environment
 #' @param solvar name of solution variable
 #' @param ignore_order whether to ignore the ordering
+#' @param ignore_case whether to ignore the case
 #' @param add whether to add feedback
 #' @return logical
 #' @export
 chr_vecs_equal <- function(subvar, sol_env, solvar = subvar,
                            ignore_order = FALSE,
+                           ignore_case = FALSE,
                            add = TRUE) {
-  res <- c("lengths_match" = FALSE, "vals_match" = FALSE)
+  res <- c("lengths_match" = FALSE, "vals_match" = FALSE, "case_match" = FALSE)
   if (!exists(subvar, parent.frame(), inherits = FALSE)) {
     add_feedback("* you did not define `", subvar,
                  "` (check spelling and capitalization)", add = add)
@@ -615,12 +617,21 @@ chr_vecs_equal <- function(subvar, sol_env, solvar = subvar,
           add_feedback("* `", subvar, "` was not of type 'character'")
         } else {
           if (ignore_order) {
-            res["vals_match"] <- setequal(sub_var, sol_var)
+            res["vals_match"] <- setequal(tolower(sub_var), tolower(sol_var))
+            res["case_match"] <- setequal(sub_var, sol_var)
           } else {
-            res["vals_match"] <- identical(sub_var, sol_var)
+            res["vals_match"] <- identical(tolower(sub_var), tolower(sol_var))
+            res["case_match"] <- identical(sub_var, sol_var)
           }
           if (res["vals_match"]) {
-            add_feedback("* correct", add = add)
+            if (ignore_case) {
+              res <- res[1:2] # get ride of case_match
+              add_feedback("* correct", add = add)
+            } else if (res["case_match"]) {
+              add_feedback("* correct", add = add)
+            } else {
+              add_feedback("* the case does not match (check uppercase versus lowercase characters)", add = add)
+            }
           } else {
             add_feedback("* incorrect; see solution code", add = add)
           }
