@@ -1,5 +1,3 @@
-context("test-assess")
-
 test_that("round up", {
   expect_equal(round2(0.5), 1)
   expect_equal(round2(1.5), 2)

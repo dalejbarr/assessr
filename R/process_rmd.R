@@ -1,5 +1,53 @@
 knit_safely <- purrr::safely(knitr::knit)
 
+#' Render dynamic solutions to R Markdown
+#'
+#' Create submission-specific solution files based on a generic
+#' solution file and task variables.
+#'
+#' @param outfile File path of R Markdown output file.
+#' @param solfile File path of generic solution file.
+#' @param task_vars Named list of tasks, with sublists containing task
+#'   variables for the corresponding task. Task names should match
+#'   chunk names in the generic solution file.
+#' @param open Open delimiter for task variables.
+#' @param close Close delimiter for task variables.
+#' @param overwrite Overwrite existing output file.
+#' @return A named list of solution chunks where the task variables
+#'   have been replaced with the values specified in \code{task_vars}.
+#' @details Task variables are referenced in the solution file
+#'   embedded between the open and close delimiters.
+#' @export
+render_solutions <- function(outfile,
+                             solfile,
+                             task_vars = NULL,
+                             open = "{{",
+                             close = "}}",
+                             overwrite = FALSE) {
+  sol_code <- tangle(solfile)
+
+  gsub2 <- function(x, pattern, replacement) {
+    gsub(pattern, replacement, x)
+  }
+
+  sol2 <- purrr::map(names(task_vars), function(.nx) {
+    sol <- sol_code[[.nx]]
+    if (!is.null(sol)) {
+      for (.n in names(task_vars[[.nx]])) {
+        sol <-
+          gsub(paste0(open, .n, close), task_vars[[.nx]][[.n]], sol, fixed = TRUE)
+      }
+    } else {
+      warning("'", .nx, "' defined in task_vars, but no chunk with that name exists in solution file.")
+    }
+    sol
+  })
+
+  names(sol2) <- names(task_vars)
+  nlist_to_rmd(sol2, outfile, overwrite)
+  sol2
+}
+
 restore_search_path <- function(search_pre) {
   ## restore the search path to its state before submission/key code was run
   search_diff <- setdiff(search(), search_pre)
@@ -64,7 +112,7 @@ tangle <- function(filename, inline_code = FALSE, documentation = 1L) {
 compile_key <- function(s_file, a_file, overwrite = FALSE,
                         workdir = NULL, save_fig = TRUE, preseed = NULL) {
   search_pre <- search()
-  
+
   a_chunks <- tangle(a_file)
   tasks <- names(a_chunks)
   if (any(grepl("___", tasks))) {
@@ -73,7 +121,6 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
 
   preseed <- validate_preseed(preseed, tasks)
   
-  ##browser()
   sol_chunks <- tangle(s_file)
   missing <- setdiff(tasks, names(sol_chunks))
   if (length(missing)) {
@@ -130,13 +177,15 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
                          envir = this_env, new_device = FALSE,
                          stop_on_error = 0L)
     }
-    
+
     ## check whether to set the seed before the assessed task
-    if (to_run[length(to_run)] %in% tasks_ix) {
-      ## save it
-      this_task <- names(sol_chunks)[to_run[length(to_run)]]
-      if (!is.null(preseed[[this_task]])) {
-        set.seed(preseed[[this_task]])
+    if (length(to_run)) {
+      if (to_run[length(to_run)] %in% tasks_ix) {
+        ## save it
+        this_task <- names(sol_chunks)[to_run[length(to_run)]]
+        if (!is.null(preseed[[this_task]])) {
+          set.seed(preseed[[this_task]])
+        }
       }
     }
     

@@ -1,3 +1,23 @@
+#' Export named list as RMarkdown file
+#'
+#' @param nlist A named list, with the names corresponding to chunk names for the output file.
+#' @param outfile Name of the output file.
+#' @param overwrite Whether to overwrite existing file.
+#' @export
+nlist_to_rmd <- function(nlist, outfile, overwrite = FALSE) {
+  if (!overwrite) {
+    if (file.exists(outfile)) {
+      stop("file '", outfile, "' exists and 'overwrite' = FALSE")
+    }
+  }
+  cat("", file = outfile, append = FALSE) # create the file
+  lines <- purrr::map(names(nlist), function(.nx) {
+    cat("```{r ", .nx, "}\n", sep = "", file = outfile, append = TRUE)
+    cat(nlist[[.nx]], sep = "\n", file = outfile, append = TRUE)
+    cat("```\n\n", file = outfile, append = TRUE)
+  })
+}
+
 #' Round up from .5
 #'
 #' @param x a numeric string (or number that can be converted to a
@@ -1099,4 +1119,171 @@ form_rand_match <- function(subvar, solenv, solvar = subvar,
   if (res)
     add_feedback("* random effects terms were correct", add = add)
   res
+}
+
+#' Do matrices have same dimensions?
+#'
+#' @param submx Quoted name of submission matrix.
+#' @param sol_env Solution environment.
+#' @param solmx Name of solution matrix.
+#' @param add Whether to add feedback.
+#' @return Logical corresponding to whether matrices have same dimensions.
+#' @export
+matrix_same_dims <- function(submx,
+                             sol_env,
+                             solmx = submx, add = TRUE) {
+  res <- FALSE
+  sol_mx <- get(solmx, envir = sol_env)
+  sub_mx <- safe_get_type(submx, "matrix", parent.frame(), add = add)
+
+  ## now compare
+  if (!is.null(sub_mx)) {
+    if (length(dim(sub_mx)) != length(dim(sol_mx))) {
+      add_feedback(paste0("* `", submx, "` had the wrong number of dimensions (",
+                          length(dim(sub_mx)), "); should have had ",
+                          length(dim(sol_mx))), add = add)
+    } else {
+      res <- identical(dim(sub_mx), dim(sol_mx))
+      if (!res) {
+        add_feedback(paste0("* `", submx, "` should have been ",
+                            dim(sol_mx)[1], "x", dim(sol_mx)[2],
+                            "; yours was ",
+                            dim(sub_mx)[1], "x", dim(sub_mx)[2]),
+                     add = add)
+      } else {
+        add_feedback("* dimensions of your table matched the solution", add = add)
+      }
+    }
+  }    
+  res
+}
+
+#' Are the matrix values close?
+#'
+#' @param submx Quoted name of submission matrix.
+#' @param sol_env Solution environment.
+#' @param solmx Name of solution matrix.
+#' @param tolerance How close the values need to be to be considered identical.
+#' @param add Whether to add feedback.
+#' @details Note that the dimensions are not checked, so can return TRUE if the values are close but come from a matrix of a different dimension.
+#' @seealso \code{\link{matrix_same_dims}}
+#' @return Number of cell values matching the solution.
+#' @export
+matrix_vals_close <- function(submx,
+                              sol_env,
+                              solmx = submx,
+                              tolerance = .002,
+                              add = TRUE) {
+  n_near <- 0
+  sol_mx <- get(solmx, envir = sol_env)
+  sub_mx <- safe_get_type(submx, "matrix", parent.frame(), add = add)
+
+  if (!is.null(sub_mx)) {
+    sol_vec <- c(sol_mx)
+    sub_vec <- c(sub_mx)
+    if (length(sol_vec) != length(sub_vec)) {
+      add_feedback("* submission matrix had different number of values (",
+                   length(sub_vec), ") from solution (",
+                   length(sol_vec), ")")
+    } else {
+      n_near <- sum(dplyr::near(sol_vec, sub_vec, tolerance))
+      if (n_near == length(sol_vec)) {
+        add_feedback("* all your matrix values matched the solution", add = add)
+      } else {
+        add_feedback("* ", n_near, " of ", length(sol_vec),
+                     " values in your matrix matched the solution", add = add)
+      }
+    }
+  }
+  n_near
+}
+
+#' Safely get a variable of specific type.
+#'
+#' @param x Quoted name of the variable.
+#' @param type The data type of the variable.
+#' @param env The environment in which to search.
+#' @param inherits Whether to search in the parent environments.
+#' @param add Whether or not to add feedback.
+#' @details First checks whether the variable exists in the environment. If it does, then checks whether it is of the appropriate type.
+#' @return A value of the desired type if found, or \code{NULL} if not found.
+#' @export
+safe_get_type <- function(x, type, env = parent.frame(), inherits = FALSE,
+                          add = TRUE) {
+  ## attempt to retrieve matrix from submission environment
+  res <- NULL
+  if (!exists(x, env, inherits = inherits)) {
+    add_feedback(paste0("* you did not define `", x, "` (your code failed because of an error, or you renamed variables given to you)"),
+                 add = add)
+  } else {
+    res <- get(x, envir = env, inherits = inherits)
+    if (!inherits(res, type)) {
+      add_feedback(paste0("* `", x, "` was not of type '", type, "'"),
+                   add = add)
+      res <- NULL
+    }
+  }
+  res
+}
+
+#' Check whether t-test objects are identical
+#'
+#' @param subvar Quoted name of the variable.
+#' @param sol_env Solution environment.
+#' @param solvar Quoted name of variable in submission environment.
+#' @param tolerance Three-element numeric vector, how close values have to be.
+#' @param add Whether to add feedback.
+#' @return A logical vector with elements tmatch, dfmatch, pmatch.
+#' @export
+ttest_identical <- function(subvar, sol_env,
+                            solvar = subvar,
+                            tolerance = c(.02, .2, .002),
+                            add = TRUE) {
+  res <- c(tmatch = FALSE, dfmatch = FALSE, pmatch = FALSE)
+  sol_t <- get(solvar, sol_env)
+  sub_t <- safe_get_type(subvar, "htest", parent.frame())
+
+  if (!is.null(sub_t)) {
+    subtbl <- broom::tidy(sub_t)
+    soltbl <- broom::tidy(sol_t)
+    res["tmatch"] <- dplyr::near(abs(subtbl$statistic),
+                                 abs(soltbl$statistic), tolerance[1])
+    res["dfmatch"] <- dplyr::near(subtbl$parameter,
+                                  soltbl$parameter, tolerance[2])
+    res["pmatch"] <- dplyr::near(subtbl$p.value,
+                                 soltbl$p.value, tolerance[3])
+    add_feedback("* solution t-test: ", apa_t(sol_t), add = add)
+    add_feedback("* your t-test: ", apa_t(sub_t), add = add)
+    if (all(res)) {
+      add_feedback("* matched solution", add = add)
+    } else {
+      add_feedback("* did not match solution", add = add)
+    }
+  }
+  res
+}
+
+#' Report a t-test in APA format
+#'
+#' @param x A t-test object, result of the call to \code{t.test}.
+#' @return A string displaying results in APA format.
+#' @export
+apa_t <- function(x) {
+  t_tbl <- broom::tidy(x)
+  paste0("$t(", round(t_tbl$parameter, 1), ") = ",
+         round(abs(t_tbl$statistic), 2), "$, ",
+         apa_p(t_tbl$p.value))
+}
+
+#' Report a p-value in APA format
+#'
+#' @param x The p-value.
+#' @return A string with formatted p-value.
+#' @export
+apa_p <- function(x) {
+  paste0("$p ",
+         case_when(x < .001 ~ "< .001",
+                   x > .9994 ~ "> .999",
+                   TRUE ~ sprintf("= %0.3f", x)),
+         "$")
 }
