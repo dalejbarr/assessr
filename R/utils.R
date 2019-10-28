@@ -1275,7 +1275,7 @@ safe_get_type <- function(x, type, env = parent.frame(), inherits = FALSE,
 #' @export
 ttest_identical <- function(subvar, sol_env,
                             solvar = subvar,
-                            tolerance = c(.2, .02, .2, .002),
+                            tolerance = c(.2, .02, .2, .002), # mean, t, df, p-val
                             add = TRUE) {
   res <- c(mmatch = FALSE, tmatch = FALSE, dfmatch = FALSE, pmatch = FALSE)
   sol_t <- get(solvar, sol_env)
