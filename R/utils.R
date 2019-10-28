@@ -3,8 +3,9 @@
 #' @param nlist A named list, with the names corresponding to chunk names for the output file.
 #' @param outfile Name of the output file.
 #' @param overwrite Whether to overwrite existing file.
+#' @return Path to output file, returned invisibly.
 #' @export
-nlist_to_rmd <- function(nlist, outfile, overwrite = FALSE) {
+nlist_to_rmd <- function(nlist, outfile = tempfile(), overwrite = FALSE) {
   if (!overwrite) {
     if (file.exists(outfile)) {
       stop("file '", outfile, "' exists and 'overwrite' = FALSE")
@@ -16,6 +17,7 @@ nlist_to_rmd <- function(nlist, outfile, overwrite = FALSE) {
     cat(nlist[[.nx]], sep = "\n", file = outfile, append = TRUE)
     cat("```\n\n", file = outfile, append = TRUE)
   })
+  invisible(outfile)
 }
 
 #' Round up from .5
@@ -107,7 +109,8 @@ remove_comments <- function(x) {
 #' @export
 num_vals_close <- function(subvar, sol_env, solvar = subvar,
                            ignore.case = FALSE,
-                           tolerance = .002, add = TRUE) {
+                           tolerance = .002, add = TRUE,
+                           inherits = FALSE) {
   res <- c("is_single_val" = FALSE,
            "vals_match" = FALSE)
 
@@ -120,11 +123,12 @@ num_vals_close <- function(subvar, sol_env, solvar = subvar,
       obj <- subvar # cancel
     }
   }
-  if (!exists(obj, envir = parent.frame(), inherit = FALSE)) {
+  if (!exists(obj, envir = parent.frame(), inherits = inherits)) {
     add_feedback(paste0("* you did not define `", subvar, "`"),
                         add = add)
   } else {
-    sub_val <- get(obj, envir = parent.frame(), inherits = FALSE)
+    sub_val <- safe_get_num(obj, env = parent.frame(), inherits = inherits, add = FALSE)
+    ## sub_val <- get(obj, envir = parent.frame(), inherits = inherits)
     compare_vals <- TRUE
     if (inherits(sub_val, "data.frame")) {
       add_feedback(paste0("* `", subvar, "` should be a single value, not a table"), add = add)
@@ -153,13 +157,18 @@ num_vals_close <- function(subvar, sol_env, solvar = subvar,
         add_feedback("* `", subvar, "` was not numeric", add = add)
       } else {
         if (is.nan(sub_val) || is.infinite(sub_val) || is.na(sub_val)) {
-          add_feedback("* `", subvar, "` was `NA`, `NaN`, `+Inf`, or `-Inf`", add = add)
+          add_feedback("* `", subvar, "` was `NA`, `NaN`, `+Inf`, or `-Inf`",
+                       add = add)
         } else {
           res["vals_match"] <- abs(sub_val - sol_val) < tolerance
+          vv <- if (length(sol_val) > 1L) "values" else "value"
           if (res["vals_match"]) {
-            add_feedback("* your values matched the solution", add = add)
+            add_feedback("* your ", vv, " for `", subvar, "` ",
+                         "matched the solution", add = add)
           } else {
-            add_feedback("* your values did not match the solution; see solution code", add = add)
+            add_feedback("* your ", vv, " for `", subvar, "` ",
+                         "did not match the solution; see solution code",
+                         add = add)
           }
         }
       }
@@ -185,7 +194,7 @@ vec_vals_close <- function(subvec, sol_env, solvec = subvec,
            "vals_match" = FALSE)
 
   sol_vec <- get(solvec, envir = sol_env)
-  if (!exists(subvec, envir = parent.frame(), inherit = FALSE)) {
+  if (!exists(subvec, envir = parent.frame(), inherits = FALSE)) {
     add_feedback(paste0("* you did not define `", subvec, "`"),
                  add = add)
   } else {
@@ -823,10 +832,10 @@ lms_identical <- function(subvar, solenv, solvar = subvar, add = TRUE) {
 #' @details If no attempt was made, then the value of \code{subvar} will remain \code{NULL}.
 #' @return Returns \code{FALSE} only if \code{subvar} is \code{NULL}.
 #' @export
-attempted <- function(subvar, add = TRUE) {
+attempted <- function(subvar, add = TRUE, inherits = FALSE) {
   res <- TRUE
-  if (exists(subvar, envir = parent.frame(), inherits = FALSE)) {
-    sub_var <- get(subvar, envir = parent.frame(), inherits = FALSE)
+  if (exists(subvar, envir = parent.frame(), inherits = inherits)) {
+    sub_var <- get(subvar, envir = parent.frame(), inherits = inherits)
     res <- !is.null(sub_var)
     if (!res) {
       add_feedback("* No attempt", add = add)
@@ -1174,8 +1183,10 @@ matrix_vals_close <- function(submx,
                               solmx = submx,
                               tolerance = .002,
                               add = TRUE) {
-  n_near <- 0
   sol_mx <- get(solmx, envir = sol_env)
+  result <- rep(FALSE, prod(dim(sol_mx)))
+  names(result) <- paste0("cell_", seq_len(prod(dim(sol_mx))))
+
   sub_mx <- safe_get_type(submx, "matrix", parent.frame(), add = add)
 
   if (!is.null(sub_mx)) {
@@ -1186,16 +1197,43 @@ matrix_vals_close <- function(submx,
                    length(sub_vec), ") from solution (",
                    length(sol_vec), ")")
     } else {
-      n_near <- sum(dplyr::near(sol_vec, sub_vec, tolerance))
-      if (n_near == length(sol_vec)) {
+      result[] <- dplyr::near(sol_vec, sub_vec, tolerance)
+      if (all(result)) {
         add_feedback("* all your matrix values matched the solution", add = add)
       } else {
-        add_feedback("* ", n_near, " of ", length(sol_vec),
+        add_feedback("* ", sum(result), " of ", length(sol_vec),
                      " values in your matrix matched the solution", add = add)
       }
     }
   }
-  n_near
+  result
+}
+
+#' Safely get a double or an integer
+#' 
+#' @param x Quoted name of the variable.
+#' @param env The environment in which to search.
+#' @param inherits Whether to search in the parent environments.
+#' @param add Whether or not to add feedback.
+#' @details First checks whether the variable exists in the environment. If it does, then checks whether it is of the appropriate type.
+#' @return A value of the desired type if found, or \code{NULL} if not found.
+#' @export
+safe_get_num <- function(x, env = parent.frame(), inherits = FALSE,
+                         add = TRUE) {
+  ## attempt to retrieve from submission environment
+  res <- NULL
+  if (!exists(x, env, inherits = inherits)) {
+    add_feedback(paste0("* you did not define `", x, "` (your code failed because of an error, or you renamed variables given to you)"),
+                 add = add)
+  } else {
+    res <- get(x, envir = env, inherits = inherits)
+    if (!(inherits(res, "numeric") || inherits(res, "integer"))) {
+      add_feedback(paste0("* `", x, "` was not a number"),
+                   add = add)
+      res <- NULL
+    }
+  }
+  res
 }
 
 #' Safely get a variable of specific type.
@@ -1233,25 +1271,33 @@ safe_get_type <- function(x, type, env = parent.frame(), inherits = FALSE,
 #' @param solvar Quoted name of variable in submission environment.
 #' @param tolerance Three-element numeric vector, how close values have to be.
 #' @param add Whether to add feedback.
-#' @return A logical vector with elements tmatch, dfmatch, pmatch.
+#' @return A logical vector with elements mmatch, tmatch, dfmatch, pmatch.
 #' @export
 ttest_identical <- function(subvar, sol_env,
                             solvar = subvar,
-                            tolerance = c(.02, .2, .002),
+                            tolerance = c(.2, .02, .2, .002),
                             add = TRUE) {
-  res <- c(tmatch = FALSE, dfmatch = FALSE, pmatch = FALSE)
+  res <- c(mmatch = FALSE, tmatch = FALSE, dfmatch = FALSE, pmatch = FALSE)
   sol_t <- get(solvar, sol_env)
-  sub_t <- safe_get_type(subvar, "htest", parent.frame())
+  sub_t <- safe_get_type(subvar, "htest", parent.frame(), add = add)
 
   if (!is.null(sub_t)) {
     subtbl <- broom::tidy(sub_t)
     soltbl <- broom::tidy(sol_t)
+
+    res["mmatch"] <-
+      (dplyr::near(subtbl$estimate1, soltbl$estimate1, tolerance[1]) &&
+       dplyr::near(subtbl$estimate2, soltbl$estimate2, tolerance[1])) ||
+      (dplyr::near(subtbl$estimate1, soltbl$estimate2, tolerance[1]) &&
+       dplyr::near(subtbl$estimate2, soltbl$estimate1, tolerance[1]))
+    if (is.na(res["mmatch"])) ## one-sample test
+      res["mmatch"] <- FALSE
     res["tmatch"] <- dplyr::near(abs(subtbl$statistic),
-                                 abs(soltbl$statistic), tolerance[1])
+                                 abs(soltbl$statistic), tolerance[2])
     res["dfmatch"] <- dplyr::near(subtbl$parameter,
-                                  soltbl$parameter, tolerance[2])
+                                  soltbl$parameter, tolerance[3])
     res["pmatch"] <- dplyr::near(subtbl$p.value,
-                                 soltbl$p.value, tolerance[3])
+                                 soltbl$p.value, tolerance[4])
     add_feedback("* solution t-test: ", apa_t(sol_t), add = add)
     add_feedback("* your t-test: ", apa_t(sub_t), add = add)
     if (all(res)) {
@@ -1270,7 +1316,10 @@ ttest_identical <- function(subvar, sol_env,
 #' @export
 apa_t <- function(x) {
   t_tbl <- broom::tidy(x)
-  paste0("$t(", round(t_tbl$parameter, 1), ") = ",
+  means <- format(sort(c(t_tbl$estimate1, t_tbl$estimate2)), digits = 1, nsmall = 1)
+  paste0("means of ",
+         paste(means, collapse = " and "), "; ",
+         "$t(", round(t_tbl$parameter, 1), ") = ",
          round(abs(t_tbl$statistic), 2), "$, ",
          apa_p(t_tbl$p.value))
 }
@@ -1282,7 +1331,7 @@ apa_t <- function(x) {
 #' @export
 apa_p <- function(x) {
   paste0("$p ",
-         case_when(x < .001 ~ "< .001",
+         dplyr::case_when(x < .001 ~ "< .001",
                    x > .9994 ~ "> .999",
                    TRUE ~ sprintf("= %0.3f", x)),
          "$")

@@ -80,7 +80,6 @@ feedback_report <- function(d,
   names(parms$fig) <- d$task
   
   parms$extra <- extra_params
-  
   rmarkdown::render(template,
                     rmarkdown::html_document(),
                     output_file = "feedback_report.html",

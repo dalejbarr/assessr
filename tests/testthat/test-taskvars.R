@@ -24,8 +24,8 @@ key <- compile_key(tfile, a_file, save_fig = FALSE)
 test_that("task variables at assess level", {
   res <- assess(tfile, "subx", key,
                 task_varnames = list("two-plus-two" = tvars))$vars[[1]]$value
-  expect_vector(result, ptype = logical(), size = 2L)
-  expect_true(all(result))
+  expect_vector(res, ptype = logical(), size = 2L)
+  expect_true(all(res))
 })
 
 ## create a directory with two submissions

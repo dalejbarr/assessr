@@ -154,7 +154,7 @@ assess <- function(filename, sub_id = filename, key,
   }
 
   preseed <- validate_preseed(preseed, key[["task"]])
-  
+
   res <- purrr::map(key[["task"]], function(x) {
     ##if (x == "P5") browser()
     reset_feedback()
@@ -191,10 +191,10 @@ assess <- function(filename, sub_id = filename, key,
             errs <- purrr::map_lgl(result, evaluate::is.error)
             if (any(errs)) {
               fbk <- paste0("your code chunk named `", names(sub_chunks)[nx],
-                            "` generated the following error(s):\n```\n",
+                            "` generated the following error(s):\n<pre>\n",
                             paste(purrr::map_chr(result[errs],
                                                  purrr::pluck, "message"),
-                                  collapse = "\n"), "\n```\n")
+                                  collapse = "\n"), "\n</pre>\n")
               add_feedback(fbk)
             }
           })
@@ -210,9 +210,7 @@ assess <- function(filename, sub_id = filename, key,
     ## assign("._as", key[["sol_env"]][[x]], envir = this_env)
 
     ff <- list()
-    ## ff$result <- assess_task(sub_id, x, sub_chunks,
-    ##                         key[["a_code"]][[x]], this_env, use_sub_env)
-    ## ff$error <- NULL
+
     if (!is.null(preseed[[x]])) {
       set.seed(preseed[[x]])
     }
@@ -330,9 +328,9 @@ assess_task <- function(sub_id, task, codelist, a_code,
   errs <- purrr::map_lgl(result, evaluate::is.error)
   err <- FALSE
   if (any(errs)) {
-    fbk <- paste0("your code generated the following error(s):\n```\n",
+    fbk <- paste0("your code generated the following error(s):\n<pre>\n",
                   paste(purrr::map_chr(result[errs], purrr::pluck, "message"),
-                        collapse = "\n"), "\n```\n")
+                        collapse = "\n"), "\n</pre>\n")
     add_feedback(fbk)
     err <- TRUE
   }

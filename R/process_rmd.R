@@ -10,17 +10,19 @@ knit_safely <- purrr::safely(knitr::knit)
 #' @param task_vars Named list of tasks, with sublists containing task
 #'   variables for the corresponding task. Task names should match
 #'   chunk names in the generic solution file.
+#' @param preamble Character vector with lines to be written to the
+#'   solution before the first task chunk.
 #' @param open Open delimiter for task variables.
 #' @param close Close delimiter for task variables.
 #' @param overwrite Overwrite existing output file.
-#' @return A named list of solution chunks where the task variables
-#'   have been replaced with the values specified in \code{task_vars}.
+#' @return A character vector containing lines from the solution file, returned invisibly.
 #' @details Task variables are referenced in the solution file
 #'   embedded between the open and close delimiters.
 #' @export
 render_solutions <- function(outfile,
                              solfile,
                              task_vars = NULL,
+                             preamble = "",
                              open = "{{",
                              close = "}}",
                              overwrite = FALSE) {
@@ -44,8 +46,12 @@ render_solutions <- function(outfile,
   })
 
   names(sol2) <- names(task_vars)
-  nlist_to_rmd(sol2, outfile, overwrite)
-  sol2
+  
+  body <- readLines(nlist_to_rmd(sol2)) # , outfile, overwrite)
+  if (file.exists(outfile) && !overwrite) {
+  }
+  writeLines(c(preamble, "", body), outfile)
+  invisible(readLines(outfile))
 }
 
 restore_search_path <- function(search_pre) {
@@ -114,6 +120,7 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
   search_pre <- search()
 
   a_chunks <- tangle(a_file)
+
   tasks <- names(a_chunks)
   if (any(grepl("___", tasks))) {
     stop("triple underscore '___' not allowed in code block names")
@@ -135,6 +142,8 @@ compile_key <- function(s_file, a_file, overwrite = FALSE,
          paste(paste0("'", missing, "'"), collapse = ", "),
          " which ", verb, " missing from solution file")
   }
+  ## todo: order tasks by order in solution
+  tasks <- intersect(names(sol_chunks), names(a_chunks))
   
   tasks_ix <- c(purrr::map_int(tasks, ~ which(names(sol_chunks) == .x)),
                 which(names(sol_chunks) == tasks[length(tasks)]) + 1L)

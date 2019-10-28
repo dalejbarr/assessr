@@ -1,6 +1,6 @@
 Package: assessr
 Title: Computer-aided generation and assessment of R assignments
-Version: 0.1.1.9000
+Version: 0.1.5.9000
 Date: 2019-04-14
 Authors@R: person("Dale", "Barr", email = "dalejbarr@protonmail.com", role = c("aut", "cre"))
 Description: The assessr package makes it easy for instructors to
@@ -29,7 +29,8 @@ Imports:
     lme4,
     broom,
     miniUI,
-    shiny
+    shiny,
+    kableExtra
 RoxygenNote: 6.1.1
 Suggests: 
     testthat (>= 2.1.0)
