@@ -247,10 +247,13 @@ vec_vals_close <- function(subvec, sol_env, solvec = subvec,
 
 #' Are submission and solution tables identical
 #'
-#' @param subtbl name of the table in submission environment
-#' @param sol_env the solution environment
-#' @param soltbl name of the table in the solution environment
-#' @param ignore.case whether to ignore case when matching submission and solution variable names
+#' @param subtbl Name of the table in submission environment.
+#' @param sol_env The solution environment.
+#' @param soltbl Name of the table in the solution environment.
+#' @param ignore.case Whether to ignore case when matching submission and solution variable names.
+#' @param roworder_strict Whether to require the submission table to have rows in the same order as the solution table.
+#' @param colorder_strict Whether to require the submission table to have columns in the same order as the target table.
+#' @param allow_extracols Whether to allow the submission table to have extra columns not present in the solution table.
 #' @param add whether to add feedback
 #' @return logical; returns result of \code{dplyr::setequal(tblname, get(tblname, sol_env))}
 #' @export
@@ -258,6 +261,9 @@ tbls_identical <- function(subtbl,
                            sol_env,
                            soltbl = subtbl,
                            ignore.case = FALSE,
+                           roworder_strict = FALSE,
+                           colorder_strict = FALSE,
+                           allow_extracols = FALSE,
                            add = TRUE) {
   res <- FALSE
   sol_tbl <- get(soltbl, envir = sol_env)
@@ -265,8 +271,8 @@ tbls_identical <- function(subtbl,
     sol2 <- sol_tbl
     sub2 <- sub_tbl
     if (ignore.case) {
-        ## only change if it won't produce an error
-      if (n_distinct(colnames(sub2)) == ncol(sub2)) {
+      ## only change if it won't produce an error
+      if (dplyr::n_distinct(colnames(sub2)) == ncol(sub2)) {
         colnames(sol2) <- tolower(colnames(sol_tbl))
         colnames(sub2) <- tolower(colnames(sub_tbl))
       }
@@ -286,12 +292,34 @@ tbls_identical <- function(subtbl,
               "' from solution table '", soltbl, "'")
       sol2 <- sol2[sol_types != "list"]      
     }
+    if (allow_extracols) {
+      ## reduce submission to include only cols in solution
+      sub2 <- sub2[, intersect(colnames(sol2), colnames(sub2))]
+    }
     if (!dplyr::setequal(sol2, sub2)) {
       add_feedback("* your table `", subtbl, "` differs from the solution table; see solution code", add = add)
     } else {
-      add_feedback("* your table `", subtbl, "` matched the solution table",
-                   add = add)
-      res <- TRUE
+      ## strict on rows or columns?
+      .testrow <- TRUE
+      .testcol <- TRUE
+      if (roworder_strict) {
+        solrows <- sapply(sol2, order)
+        subrows <- sapply(sub2, order)
+        .testrow <- identical(subrows[, colnames(solrows)], solrows)
+        if (!.testrow)
+          add_feedback("* Rows of your table `", subtbl, "` were in a different order than the rows in the solution.", add = add)
+      }
+      if (colorder_strict) {
+        .testcol <- identical(colnames(sol2), colnames(sub2))
+        if (!.testcol)
+          add_feedback("* Columns of your table `", subtbl, "` appeared in a different order than the columns in the solution.", add = add)
+      }
+      if (.testrow && .testcol) {
+        add_feedback("* your table `", subtbl, "` matched the solution table",
+                     add = add)
+        
+        res <- TRUE
+      }
     }
   }
   res

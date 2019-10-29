@@ -1,6 +1,6 @@
 test_that("default correct case", {
   set.seed(62)
-  target <- c(tmatch = TRUE, dfmatch = TRUE, pmatch = TRUE)
+  target <- c(mmatch = TRUE, tmatch = TRUE, dfmatch = TRUE, pmatch = TRUE)
 
   myt <- t.test(rnorm(10), rnorm(10), var.equal = TRUE)
   e <- new.env()

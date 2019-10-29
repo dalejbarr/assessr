@@ -4,7 +4,7 @@
 \alias{attempted}
 \title{Check whether any attempt was made to answer the question}
 \usage{
-attempted(subvar, add = TRUE)
+attempted(subvar, add = TRUE, inherits = FALSE)
 }
 \arguments{
 \item{subvar}{Name of the submission variable to test.}
