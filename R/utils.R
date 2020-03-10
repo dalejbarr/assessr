@@ -552,14 +552,61 @@ get_err_string <- function(x) {
   paste(readLines(f), collapse = "\n")
 }
 
-#' Are objects identical
+#' Are objects the same
 #'
 #' @param subobj name of submission object
 #' @param sol_env solution environment
 #' @param solobj name of solution object
 #' @param add add feedback
+#' @param all_equal whether to use \code{all_equal} instead of \code{identical}
 #' @return logical
-#' @details use this to compare any two objects (e.g., fitted model objects resulting from a call to `lm()`, `aov()`, etc)
+#' @details \code{objs_identical} uses \code{identical}; \code{objs_all_equal} usesuse this to compare any two objects (e.g., fitted model objects resulting from a call to `lm()`, `aov()`, etc)
+#' @export
+objs_identical <- function(subobj,
+                           sol_env,
+                           solobj = subobj,
+                           add = TRUE,
+                           all_equal = FALSE) {
+  
+  res <- FALSE
+  sol_obj <- get(solobj, envir = sol_env)
+  if (!exists(subobj, envir = parent.frame(), inherits = FALSE)) {
+    add_feedback("* object `", subobj,
+                 "` was not defined; check spelling/capitalization",
+                 add = add)
+  } else {
+    sub_obj <- get(subobj, envir = parent.frame(), inherits = FALSE)
+    if (!identical(class(sub_obj), class(sol_obj))) {
+      add_feedback("* object `", subobj, "` was of incorrect type; was of class `",
+                   paste(class(sub_obj), collapse = ", "), "` but should have been `",
+                   paste(class(sol_obj), collapse = ", "), "`", add = add)
+    } else {
+      if (!is.null(sub_obj$model)) {
+        attributes(sub_obj$model) <- NULL
+        attributes(sol_obj$model) <- NULL
+        attributes(sub_obj$terms) <- NULL
+        attributes(sol_obj$terms) <- NULL
+      }
+      if (!all_equal) {
+        res <- identical(sub_obj, sol_obj, ignore.environment = TRUE)
+      } else {
+        res <- isTRUE(all.equal(sub_obj, sol_obj, check.attributes = FALSE))
+      }
+      if (res) {
+        add_feedback("* `", subobj, "` matched solution", add = add)
+      } else {
+        add_feedback("* `", subobj, "` did not match solution", add = add)
+      }
+    }
+  }
+  res
+}
+
+
+#' Are objects equal
+#'
+#' @describeIn objs_identical
+#'
 #' @export
 objs_identical <- function(subobj,
                            sol_env,
@@ -594,6 +641,7 @@ objs_identical <- function(subobj,
   }
   res
 }
+
 
 #' Safely try out a function defined in the submission
 #'

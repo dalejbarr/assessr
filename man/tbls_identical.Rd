@@ -5,8 +5,8 @@
 \title{Are submission and solution tables identical}
 \usage{
 tbls_identical(subtbl, sol_env, soltbl = subtbl, ignore.case = FALSE,
-  allow_extracols = FALSE, colorder_strict = FALSE,
-  roworder_strict = FALSE, add = TRUE)
+  roworder_strict = FALSE, colorder_strict = FALSE,
+  allow_extracols = FALSE, add = TRUE)
 }
 \arguments{
 \item{subtbl}{Name of the table in submission environment.}
@@ -17,11 +17,11 @@ tbls_identical(subtbl, sol_env, soltbl = subtbl, ignore.case = FALSE,
 
 \item{ignore.case}{Whether to ignore case when matching submission and solution variable names.}
 
-\item{allow_extracols}{Whether to allow the submission table to have extra columns not present in the solution table.}
+\item{roworder_strict}{Whether to require the submission table to have rows in the same order as the solution table.}
 
 \item{colorder_strict}{Whether to require the submission table to have columns in the same order as the target table.}
 
-\item{roworder_strict}{Whether to require the submission table to have rows in the same order as the solution table.}
+\item{allow_extracols}{Whether to allow the submission table to have extra columns not present in the solution table.}
 
 \item{add}{whether to add feedback}
 }
