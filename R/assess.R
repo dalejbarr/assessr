@@ -28,7 +28,7 @@ get_blacklist <- function() {
                  "tidyverse_update",
                  "setwd", "help", "vignette", "download.file", "system",
                  "help.start",
-                 "file.remove", "curl", "View", "browseURL")
+                 "file.remove", "curl", "View", "view", "browseURL", "set.seed")
   other <- tibble::tribble(~fn,        ~regex,
           "? (help)", "(^|[^[:alnum:]_])*(\\?)\\s*[[:alnum:]]+",
           "library() with no arguments",
