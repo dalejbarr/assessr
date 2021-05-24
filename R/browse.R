@@ -36,6 +36,10 @@ browse_assessment <- function(x) {
   } else {
     stop("unrecognized argument for 'x'; must be a character string or tibble")
   }
+
+  if (!is.integer(ares[["sub_id"]])) {
+    stop("'sub_id' must be of type 'integer'")
+  }
   
   keep_cols <- setdiff(names(ares), c("sub_id", "task", "vars", "fbk"))
   orig_colorder <- names(ares)
@@ -163,7 +167,8 @@ browse_assessment <- function(x) {
     shiny::observeEvent(input$done, {
       ## Process all the things and return the values
       ## browser()
-      ci_ix <- grep("^ci___[0-9]+___", names(input), value = TRUE)
+      saveRDS(input, ".browse_assessment_shiny_backup.rds")
+      ci_ix <- grep("^ci___", names(input), value = TRUE)
       ff <- strsplit(ci_ix, "___") %>%
         purrr::transpose() %>%
         purrr::map(purrr::flatten_chr) %>%
@@ -181,8 +186,8 @@ browse_assessment <- function(x) {
           vars <- dplyr::bind_rows(dplyr::anti_join(orig_data, new_vals,
                                                     c("sub_id", "task", "var")),
                                    new_vals) %>%
-            dplyr::group_by(sub_id, task) %>%
-            tidyr::nest(.key = "vars")
+            ## dplyr::group_by(sub_id, task) %>%
+            tidyr::nest("vars" = c(-sub_id, -task))
 
           ## now do the same for feedback
           fbk_ix <- grep("^fbk___[0-9]+___.*$", names(input), value = TRUE)
@@ -206,6 +211,8 @@ browse_assessment <- function(x) {
                                        vars, c("sub_id", "task")) %>%
               dplyr::inner_join(fbk3, c("sub_id", "task")) %>%
               dplyr::arrange(sub_id, task)
+
+            unlink(".browse_assessment_shiny_backup.rds")
             
             shiny::stopApp(final[, orig_colorder])
     })

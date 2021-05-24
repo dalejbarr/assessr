@@ -5,7 +5,7 @@
 \title{Assess individual task}
 \usage{
 assess_task(sub_id, task, codelist, a_code, orig_env, sol_env,
-  use_sub_env = TRUE)
+  use_sub_env = TRUE, task_varnames = NULL)
 }
 \arguments{
 \item{sub_id}{submission id}
@@ -19,7 +19,15 @@ assess_task(sub_id, task, codelist, a_code, orig_env, sol_env,
 \item{orig_env}{starting environment in which to evaluate submission code}
 
 \item{use_sub_env}{set to \code{TRUE} if you want to run in a single submission environment; \code{FALSE} to use the solution as starting environment}
+
+\item{task_vars}{A named character vector where the element names are the variables in the solution and the values are their realizations in the submission.}
+}
+\value{
+TODO
 }
 \description{
 Assess an individual task from a submission
+}
+\details{
+The values in \code{task_vars} appear in the submission/assessment environment as elements of the character vector \code{._av}. So if you have a task variable named 'my_var' in the solution you would reference it in the assessment code as \code{._av[["my_var"]]}.
 }

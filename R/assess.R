@@ -28,7 +28,7 @@ get_blacklist <- function() {
                  "tidyverse_update",
                  "setwd", "help", "vignette", "download.file", "system",
                  "help.start",
-                 "file.remove", "curl", "View", "browseURL")
+                 "file.remove", "curl", "View", "view", "browseURL", "set.seed")
   other <- tibble::tribble(~fn,        ~regex,
           "? (help)", "(^|[^[:alnum:]_])*(\\?)\\s*[[:alnum:]]+",
           "library() with no arguments",
@@ -107,11 +107,31 @@ safe_eval <- function(this_code, this_env, new_device) {
 #' @param workdir the working directory in which to evaluate the code
 #' @param seed starting seed for random number generation (or NULL to not set the seed)
 #' @param preseed A named list whose names are the task names and whose elements are the RNG seeds to set prior to the task.
+#' @param task_varnames A named list of task variable names, where the names are are some or all of the task names and the elements are named character vectors of variables for the corresponding task.
+#' @details Task variables are passed to the \code{task_varnames} argument to \code{\link{assess_task}}, and appear in the submission/assessment environment as the variable \code{._av}.
 #' @return A table
 #' @export
 assess <- function(filename, sub_id = filename, key,
                    use_sub_env = TRUE, workdir = NULL, seed = NULL,
-                   preseed = NULL) {
+                   preseed = NULL,
+                   task_varnames = NULL) {
+  if (!is.null(task_varnames)) {
+    ## make sure that it is a named list, and that the names
+    ## correspond to the names of the tasks in key
+    if (is.null(names(task_varnames)))
+      stop("argument 'task_varnames' must be a named list whose names match the task names in the key")
+    missing_task <- setdiff(names(task_varnames), key[["task"]])
+    if (length(missing_task > 0)) {
+      warning(
+        "task variables for supplied for ",
+        if (length(missing_task) == 1L) "a task named '" else "tasks named '",
+        paste0(missing_task, collapse = "', '"),
+        "' that ",
+        if (length(missing_task) == 1L) "is " else "are ",
+        "missing from key; variables will be ignored")
+    }
+  }
+  
   search_pre <- search()
   
   sub_chunks <- tangle(filename)
@@ -134,7 +154,7 @@ assess <- function(filename, sub_id = filename, key,
   }
 
   preseed <- validate_preseed(preseed, key[["task"]])
-  
+
   res <- purrr::map(key[["task"]], function(x) {
     ##if (x == "P5") browser()
     reset_feedback()
@@ -171,10 +191,10 @@ assess <- function(filename, sub_id = filename, key,
             errs <- purrr::map_lgl(result, evaluate::is.error)
             if (any(errs)) {
               fbk <- paste0("your code chunk named `", names(sub_chunks)[nx],
-                            "` generated the following error(s):\n```\n",
+                            "` generated the following error(s):\n<pre>\n",
                             paste(purrr::map_chr(result[errs],
                                                  purrr::pluck, "message"),
-                                  collapse = "\n"), "\n```\n")
+                                  collapse = "\n"), "\n</pre>\n")
               add_feedback(fbk)
             }
           })
@@ -190,9 +210,7 @@ assess <- function(filename, sub_id = filename, key,
     ## assign("._as", key[["sol_env"]][[x]], envir = this_env)
 
     ff <- list()
-    ## ff$result <- assess_task(sub_id, x, sub_chunks,
-    ##                         key[["a_code"]][[x]], this_env, use_sub_env)
-    ## ff$error <- NULL
+
     if (!is.null(preseed[[x]])) {
       set.seed(preseed[[x]])
     }
@@ -201,7 +219,8 @@ assess <- function(filename, sub_id = filename, key,
                              key[["a_code"]][[x]],
                              this_env,
                              key[["sol_env"]][[x]],
-                             use_sub_env)
+                             use_sub_env,
+                             task_varnames[[x]]) ## TODO add taskvar argument here
     if (!is.null(ff[["error"]])) {
       setwd(oldwd)
       stop(ff[["error"]][["message"]])
@@ -233,9 +252,19 @@ assess <- function(filename, sub_id = filename, key,
 #' @param a_code assessment code
 #' @param orig_env starting environment in which to evaluate submission code
 #' @param use_sub_env set to \code{TRUE} if you want to run in a single submission environment; \code{FALSE} to use the solution as starting environment
+#' @param task_vars A named character vector where the element names are the variables in the solution and the values are their realizations in the submission.
+#' @details The values in \code{task_vars} appear in the submission/assessment environment as elements of the character vector \code{._av}. So if you have a task variable named 'my_var' in the solution you would reference it in the assessment code as \code{._av[["my_var"]]}.
+#' @return TODO
 #' @export
 assess_task <- function(sub_id, task, codelist, a_code,
-                        orig_env, sol_env, use_sub_env = TRUE) {
+                        orig_env, sol_env, use_sub_env = TRUE,
+                        task_varnames = NULL) {
+
+  if (!is.null(task_varnames)) {
+    if (is.null(names(task_varnames)) || !is.character(task_varnames))
+      stop("argument 'task_varnames' must be a named character vector")
+  }
+  
   sub_code <- codelist[[task]]
   if (is.null(sub_code)) {
     sub_code <- ""
@@ -250,6 +279,7 @@ assess_task <- function(sub_id, task, codelist, a_code,
   }
   assign("._ar", list(), sub_env)
   assign("._ac", sub_code, sub_env)
+  assign("._av", as.list(task_varnames), sub_env)
   assign("._as", sol_env, sub_env)
   fig <- ""
 
@@ -298,9 +328,9 @@ assess_task <- function(sub_id, task, codelist, a_code,
   errs <- purrr::map_lgl(result, evaluate::is.error)
   err <- FALSE
   if (any(errs)) {
-    fbk <- paste0("your code generated the following error(s):\n```\n",
+    fbk <- paste0("your code generated the following error(s):\n<pre>\n",
                   paste(purrr::map_chr(result[errs], purrr::pluck, "message"),
-                        collapse = "\n"), "\n```\n")
+                        collapse = "\n"), "\n</pre>\n")
     add_feedback(fbk)
     err <- TRUE
   }
@@ -365,13 +395,14 @@ assessment_code <- function(s_file, o_file = "assess_code.Rmd",
 #' Convenience function that runs the function \code{assess} on all files within the directory specified by \code{dirname}.
 #'
 #' @param dirname name of the directory containing the submission files
-#' @param key key (answers to the problems); normally result of call to \code{link{compile_key}}
+#' @param key Must be either: (1) A single key with answers to the problems, normally result of call to \code{link{compile_key}}; or (2) A named list of keys, with names matching the values of \code{sub_id}.
 #' @param sub_id subject identifies (vector same length as \code{dirname})
 #' @param use_sub_env process submission code in the submission environment (\code{FALSE} to process it in the solution environment)
 #' @param workdir working directory
 #' @param seed random seed to set at the beginning
 #' @param preseed Named list with random seed to set before each (named) block.
 #' @param stop_after stop processing after completing N files
+#' @param task_varlist Named list of lists, with each element having names corresponding to the names in \code{sub_id}, and with each sublist being itself a named list whose names correspond to task chunks. Elements of that second list should be named character vectors with task variables.
 #' @return a dataframe with the assessment variables and their values
 #' @export 
 assess_all <- function(dirname,
@@ -381,16 +412,35 @@ assess_all <- function(dirname,
                        workdir = NULL,
                        seed = NULL,
                        preseed = NULL,
-                       stop_after = -1L) {
+                       stop_after = -1L,
+                       task_varlist = NULL) {
+
+  ## don't allow assessments where certain submissions are missing task vars
+  if (!is.null(task_varlist)) {
+    if (length(names(task_varlist)) != length(sub_id)) {
+      stop("'task_varlist' must be a named lists, with names matching elements of 'sub_id'")
+    }
+  }
+
+  if (!inherits(key, "data.frame")) {
+    ## make sure we have multiple keys and that the names match
+    if (!is.list(key))
+      stop("'key' must either be a data.frame or a named list.")
+    if (!setequal(names(key), sub_id))
+      stop("key names must match values of 'sub_id'")
+    key <- key[sub_id] ## make sure they're in the right order
+  }
+  
   todo <- list_submissions(dirname)
   if (stop_after != -1L) {
     todo <- todo[1:stop_after]
     sub_id <- sub_id[1:stop_after]
   }
-  purrr::pmap_df(list(todo, sub_id, seq_along(todo)),
-                 function(.x, .y, .z) {
+  purrr::pmap_df(list(todo, sub_id, seq_along(todo), key, task_varlist[sub_id]),
+                 function(.x, .y, .z, .k, .t) {
                    message("Processing ", .z, " of ", length(todo), " (",
                            .y, ")")
-                   assess(.x, .y, key, use_sub_env, workdir, seed, preseed)
+                   assess(.x, .y, .k, use_sub_env, workdir, seed, preseed,
+                          task_varnames = .t)
                  })
 }

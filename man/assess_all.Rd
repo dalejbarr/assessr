@@ -6,12 +6,12 @@
 \usage{
 assess_all(dirname, key, sub_id = moodle_id(list_submissions(dirname)),
   use_sub_env = TRUE, workdir = NULL, seed = NULL, preseed = NULL,
-  stop_after = -1L)
+  stop_after = -1L, task_varlist = NULL)
 }
 \arguments{
 \item{dirname}{name of the directory containing the submission files}
 
-\item{key}{key (answers to the problems); normally result of call to \code{link{compile_key}}}
+\item{key}{Must be either: (1) A single key with answers to the problems, normally result of call to \code{link{compile_key}}; or (2) A named list of keys, with names matching the values of \code{sub_id}.}
 
 \item{sub_id}{subject identifies (vector same length as \code{dirname})}
 
@@ -24,6 +24,8 @@ assess_all(dirname, key, sub_id = moodle_id(list_submissions(dirname)),
 \item{preseed}{Named list with random seed to set before each (named) block.}
 
 \item{stop_after}{stop processing after completing N files}
+
+\item{task_varlist}{Named list of lists, with each element having names corresponding to the names in \code{sub_id}, and with each sublist being itself a named list whose names correspond to task chunks. Elements of that second list should be named character vectors with task variables.}
 }
 \value{
 a dataframe with the assessment variables and their values

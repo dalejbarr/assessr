@@ -2,8 +2,10 @@
 % Please edit documentation in R/utils.R
 \name{objs_identical}
 \alias{objs_identical}
-\title{Are objects identical}
+\title{Are objects the same}
 \usage{
+objs_identical(subobj, sol_env, solobj = subobj, add = TRUE)
+
 objs_identical(subobj, sol_env, solobj = subobj, add = TRUE)
 }
 \arguments{
@@ -14,13 +16,22 @@ objs_identical(subobj, sol_env, solobj = subobj, add = TRUE)
 \item{solobj}{name of solution object}
 
 \item{add}{add feedback}
+
+\item{all_equal}{whether to use \code{all_equal} instead of \code{identical}}
 }
 \value{
 logical
 }
 \description{
-Are objects identical
+Are objects the same
+
+Are objects equal
 }
 \details{
-use this to compare any two objects (e.g., fitted model objects resulting from a call to `lm()`, `aov()`, etc)
+\code{objs_identical} uses \code{identical}; \code{objs_all_equal} usesuse this to compare any two objects (e.g., fitted model objects resulting from a call to `lm()`, `aov()`, etc)
 }
+\section{Functions}{
+\itemize{
+\item \code{objs_identical}: 
+}}
+

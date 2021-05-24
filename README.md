@@ -8,7 +8,7 @@ The assessr package is designed to enable R instructors to more efficently gener
 WARNING: This is an archival version
 ------------------------------------
 
-This is a fairly stable version of assessr used internally at the University of Glasgow Psychology department in 2018-2019. Documentation is minimal. It is included here for archival purposes. The code is currently being re-factored on a new branch for public distribution, and we anticipate releasing a vastly improved version by summer 2019. Feel free to play around with this version, but beware: **breaking changes are coming!**
+This is a fairly stable version of assessr used internally at the University of Glasgow Psychology department in 2018-2019. Documentation is minimal. It is included here for archival purposes. The code is currently being re-factored on a new branch for public distribution, and we anticipate releasing a vastly improved version by summer 2020. Feel free to play around with this version, but beware: **breaking changes are coming!**
 
 The assessr approach
 --------------------
