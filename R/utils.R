@@ -333,7 +333,11 @@ tbls_identical <- function(subtbl,
 #' @return a string containing a regular expression
 #' @export
 fn_regex <- function(fname) {
-  paste0("(^|[^[:alnum:]_])*(", fname, ")[[:space:]]*\\(")
+  if (fname == "%>%") {
+    "%>%" # match the pipe
+  } else {
+    paste0("(^|[^[:alnum:]_])*(", fname, ")[[:space:]]*\\(")
+  }
 }
 
 #' Test whether code includes a function
