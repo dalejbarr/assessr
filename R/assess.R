@@ -436,8 +436,14 @@ assess_all <- function(dirname,
     todo <- todo[1:stop_after]
     sub_id <- sub_id[1:stop_after]
   }
-  purrr::pmap_df(list(todo, sub_id, seq_along(todo), key, task_varlist[sub_id]),
-                 function(.x, .y, .z, .k, .t) {
+
+  worklist <- list(todo, sub_id, seq_along(todo))
+  if (!is.null(task_varlist)) {
+    worklist <- c(worklist, task_varlist[sub_id])
+  }
+  
+  purrr::pmap_df(worklist,
+                 function(.x, .y, .z, .t = NULL, .k = key) {
                    message("Processing ", .z, " of ", length(todo), " (",
                            .y, ")")
                    assess(.x, .y, .k, use_sub_env, workdir, seed, preseed,
