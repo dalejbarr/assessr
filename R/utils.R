@@ -125,24 +125,27 @@ num_vals_close <- function(subvar, sol_env, solvar = subvar,
   }
   if (!exists(obj, envir = parent.frame(), inherits = inherits)) {
     add_feedback(paste0("* you did not define `", subvar, "`"),
-                        add = add)
+                 add = add)
   } else {
-    sub_val <- safe_get_num(obj, env = parent.frame(), inherits = inherits, add = FALSE)
-    ## sub_val <- get(obj, envir = parent.frame(), inherits = inherits)
+    sub_val <- safe_get_num(obj, env = parent.frame(),
+                            inherits = inherits, add = FALSE)
+
     compare_vals <- TRUE
     if (inherits(sub_val, "data.frame")) {
-      add_feedback(paste0("* `", subvar, "` should be a single value, not a table"), add = add)
+      add_feedback(paste0("* `", subvar,
+                          "` should be a single value, not a table"),
+                   add = add)
       if (nrow(sub_val) == 1) {
         ## find the numeric columns and compare them all
-          lgl_ix <- purrr::map_lgl(sub_val, ~ is.numeric(.x) | inherits(.x, "difftime"))
-          if (sum(lgl_ix) > 0L) {
-            vec <- as.vector(sub_val[1, lgl_ix])
-            res["vals_match"] <- any((vec - sol_val) < tolerance)
-            if (is.na(res["vals_match"])) {
-              res["vals_match"] <- FALSE
-              add_feedback("* `", subvar, "` had value `NA`")
-            }
+        lgl_ix <- purrr::map_lgl(sub_val, ~ is.numeric(.x) | inherits(.x, "difftime"))
+        if (sum(lgl_ix) > 0L) {
+          vec <- as.vector(sub_val[1, lgl_ix])
+          res["vals_match"] <- any((vec - sol_val) < tolerance)
+          if (is.na(res["vals_match"])) {
+            res["vals_match"] <- FALSE
+            add_feedback("* `", subvar, "` had value `NA`")
           }
+        }
       } else {
         add_feedback("* `", subvar, "` was a table containing multiple rows; should have been a vector or at least, a table with only one row", add = add)
       }
@@ -150,7 +153,8 @@ num_vals_close <- function(subvar, sol_env, solvar = subvar,
       if (length(sub_val) == 1L) {
         res["is_single_val"] <- TRUE
       } else {
-        add_feedback("* `", subvar, "` was not a single value; comparing first element to solution")
+        add_feedback("* `", subvar,
+                     "` was not a single value; comparing first element to solution")
         sub_val <- sub_val[1]
       }
       if (!is.numeric(sub_val)) {
