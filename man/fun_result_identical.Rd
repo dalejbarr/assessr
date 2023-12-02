@@ -4,8 +4,14 @@
 \alias{fun_result_identical}
 \title{Do return values from a function match solution?}
 \usage{
-fun_result_identical(subfn, args = list(), solenv, solfn = subfn,
-  sameseed = TRUE, add = TRUE)
+fun_result_identical(
+  subfn,
+  args = list(),
+  solenv,
+  solfn = subfn,
+  sameseed = TRUE,
+  add = TRUE
+)
 }
 \arguments{
 \item{subfn}{name of function in submission environment}

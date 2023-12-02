@@ -4,8 +4,14 @@
 \alias{compile_all}
 \title{Compile all RMarkdown submissions}
 \usage{
-compile_all(dir, quiet = TRUE, blacklist = TRUE, progress = TRUE,
-  with_moodle_id = FALSE, knit_root_dir = NULL)
+compile_all(
+  dir,
+  quiet = TRUE,
+  blacklist = TRUE,
+  progress = TRUE,
+  with_moodle_id = FALSE,
+  knit_root_dir = NULL
+)
 }
 \arguments{
 \item{dir}{directory containing RMarkdown submissions}

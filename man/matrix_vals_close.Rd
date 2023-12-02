@@ -4,8 +4,7 @@
 \alias{matrix_vals_close}
 \title{Are the matrix values close?}
 \usage{
-matrix_vals_close(submx, sol_env, solmx = submx, tolerance = 0.002,
-  add = TRUE)
+matrix_vals_close(submx, sol_env, solmx = submx, tolerance = 0.002, add = TRUE)
 }
 \arguments{
 \item{submx}{Quoted name of submission matrix.}

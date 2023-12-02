@@ -4,8 +4,15 @@
 \alias{num_vals_close}
 \title{Are submission and solution numeric values close}
 \usage{
-num_vals_close(subvar, sol_env, solvar = subvar, ignore.case = FALSE,
-  tolerance = 0.002, add = TRUE, inherits = FALSE)
+num_vals_close(
+  subvar,
+  sol_env,
+  solvar = subvar,
+  ignore.case = FALSE,
+  tolerance = 0.002,
+  add = TRUE,
+  inherits = FALSE
+)
 }
 \arguments{
 \item{subvar}{Name of the submission variable whose value you want to test}

@@ -4,8 +4,13 @@
 \alias{ttest_identical}
 \title{Check whether t-test objects are identical}
 \usage{
-ttest_identical(subvar, sol_env, solvar = subvar, tolerance = c(0.2,
-  0.02, 0.2, 0.002), add = TRUE)
+ttest_identical(
+  subvar,
+  sol_env,
+  solvar = subvar,
+  tolerance = c(0.2, 0.02, 0.2, 0.002),
+  add = TRUE
+)
 }
 \arguments{
 \item{subvar}{Quoted name of the variable.}

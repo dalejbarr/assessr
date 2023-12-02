@@ -4,8 +4,14 @@
 \alias{compile_key}
 \title{Compile the assessment key}
 \usage{
-compile_key(s_file, a_file, overwrite = FALSE, workdir = NULL,
-  save_fig = TRUE, preseed = NULL)
+compile_key(
+  s_file,
+  a_file,
+  overwrite = FALSE,
+  workdir = NULL,
+  save_fig = TRUE,
+  preseed = NULL
+)
 }
 \arguments{
 \item{s_file}{name of Rmd solution file}

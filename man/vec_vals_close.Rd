@@ -4,8 +4,7 @@
 \alias{vec_vals_close}
 \title{Are vector element values close?}
 \usage{
-vec_vals_close(subvec, sol_env, solvec = subvec, tolerance = 0.002,
-  add = TRUE)
+vec_vals_close(subvec, sol_env, solvec = subvec, tolerance = 0.002, add = TRUE)
 }
 \arguments{
 \item{subvec}{name of the vector in the submission environment}

@@ -4,8 +4,13 @@
 \alias{extract_html_comment}
 \title{Extract html comment}
 \usage{
-extract_html_comment(filename, dbegin_regex, dend_regex = dbegin_regex,
-  remove_leading_blanks = TRUE, remove_trailing_blanks = TRUE)
+extract_html_comment(
+  filename,
+  dbegin_regex,
+  dend_regex = dbegin_regex,
+  remove_leading_blanks = TRUE,
+  remove_trailing_blanks = TRUE
+)
 }
 \arguments{
 \item{filename}{name of the html or Rmd file}

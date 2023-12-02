@@ -4,8 +4,12 @@
 \alias{feedback_template}
 \title{Create a feedback template for the assessment}
 \usage{
-feedback_template(a_file, s_file, o_file = "feedback_template.Rmd",
-  overwrite = FALSE)
+feedback_template(
+  a_file,
+  s_file,
+  o_file = "feedback_template.Rmd",
+  overwrite = FALSE
+)
 }
 \arguments{
 \item{a_file}{rmarkdown file with assessment code}

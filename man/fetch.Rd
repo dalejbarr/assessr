@@ -4,8 +4,13 @@
 \alias{fetch}
 \title{Download assignments from moodle}
 \usage{
-fetch(assign_id, targ_dir = paste0("assign_", assign_id),
-  overwrite = FALSE, url = NULL, user = NULL)
+fetch(
+  assign_id,
+  targ_dir = paste0("assign_", assign_id),
+  overwrite = FALSE,
+  url = NULL,
+  user = NULL
+)
 }
 \arguments{
 \item{assign_id}{assignment id number; digits only}

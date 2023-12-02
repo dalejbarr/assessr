@@ -4,8 +4,14 @@
 \alias{compile_assignment}
 \title{Compile assignment report}
 \usage{
-compile_assignment(subfile, quiet = FALSE, blacklist = TRUE,
-  env = parent.frame(), knit_root_dir = NULL, fix_filename = TRUE)
+compile_assignment(
+  subfile,
+  quiet = FALSE,
+  blacklist = TRUE,
+  env = parent.frame(),
+  knit_root_dir = NULL,
+  fix_filename = TRUE
+)
 }
 \arguments{
 \item{subfile}{path to submission RMarkdown file}

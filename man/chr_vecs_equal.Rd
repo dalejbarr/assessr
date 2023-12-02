@@ -4,8 +4,14 @@
 \alias{chr_vecs_equal}
 \title{Are character vectors equal?}
 \usage{
-chr_vecs_equal(subvar, sol_env, solvar = subvar, ignore_order = FALSE,
-  ignore_case = FALSE, add = TRUE)
+chr_vecs_equal(
+  subvar,
+  sol_env,
+  solvar = subvar,
+  ignore_order = FALSE,
+  ignore_case = FALSE,
+  add = TRUE
+)
 }
 \arguments{
 \item{subvar}{name of variable in submission environment}

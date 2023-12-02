@@ -4,8 +4,7 @@
 \alias{safe_get_type}
 \title{Safely get a variable of specific type.}
 \usage{
-safe_get_type(x, type, env = parent.frame(), inherits = FALSE,
-  add = TRUE)
+safe_get_type(x, type, env = parent.frame(), inherits = FALSE, add = TRUE)
 }
 \arguments{
 \item{x}{Quoted name of the variable.}

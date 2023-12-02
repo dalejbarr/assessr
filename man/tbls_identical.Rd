@@ -4,9 +4,16 @@
 \alias{tbls_identical}
 \title{Are submission and solution tables identical}
 \usage{
-tbls_identical(subtbl, sol_env, soltbl = subtbl, ignore.case = FALSE,
-  roworder_strict = FALSE, colorder_strict = FALSE,
-  allow_extracols = FALSE, add = TRUE)
+tbls_identical(
+  subtbl,
+  sol_env,
+  soltbl = subtbl,
+  ignore.case = FALSE,
+  roworder_strict = FALSE,
+  colorder_strict = FALSE,
+  allow_extracols = FALSE,
+  add = TRUE
+)
 }
 \arguments{
 \item{subtbl}{Name of the table in submission environment.}

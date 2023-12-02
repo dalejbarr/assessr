@@ -4,9 +4,17 @@
 \alias{feedback_report_pdf}
 \title{Produce a feedback report}
 \usage{
-feedback_report_pdf(d, filename, template, subdir = "feedback_reports",
-  overwrite = FALSE, quiet = TRUE, extra_params = NULL,
-  long_line_cutoff = 75, empty_fbk = "* no issues")
+feedback_report_pdf(
+  d,
+  filename,
+  template,
+  subdir = "feedback_reports",
+  overwrite = FALSE,
+  quiet = TRUE,
+  extra_params = NULL,
+  long_line_cutoff = 75,
+  empty_fbk = "* no issues"
+)
 }
 \arguments{
 \item{d}{a table with assessment data for a single submission}

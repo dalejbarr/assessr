@@ -4,8 +4,12 @@
 \alias{fbk_template_html}
 \title{Create a feedback template for HTML assessment report}
 \usage{
-fbk_template_html(a_file, s_file, o_file = "feedback_template.Rmd",
-  overwrite = FALSE)
+fbk_template_html(
+  a_file,
+  s_file,
+  o_file = "feedback_template.Rmd",
+  overwrite = FALSE
+)
 }
 \arguments{
 \item{a_file}{rmarkdown file with assessment code}

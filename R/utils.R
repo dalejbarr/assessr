@@ -999,6 +999,7 @@ is_type <- function(subvar, class) {
   if (is.na(res$type)) FALSE else res$type
 }
 
+
 #' Test set difference
 #'
 #' Does the difference in elements between first set x and second set
@@ -1415,4 +1416,43 @@ apa_p <- function(x) {
                    x > .9994 ~ "> .999",
                    TRUE ~ sprintf("= %0.3f", x)),
          "$")
+}
+
+#' Are table column values equal
+#'
+#' @param subtbl name of submission table
+#' @param subcol name of column in submission table
+#' @param sol_env solution environment
+#' @param soltbl name of table of solution environment
+#' @param solcol name of column in solution table
+#' @param add whether to add feedback
+#' @return logical
+#' @export
+tbl_cols_sameclass <- function(subtbl, subcol,
+                               sol_env,
+                               soltbl = subtbl,
+                               solcol = subcol,
+                               add = TRUE) {
+  res <- FALSE
+  sol_tbl <- get(soltbl, envir = sol_env)
+  sub_tbl <- safe_get_table(subtbl, parent.frame(), add)
+  if (!is.null(sub_tbl)) {
+    if (!(subcol %in% colnames(sub_tbl))) {
+      add_feedback("* column name `", subcol, "` was missing from your table `",
+                   subtbl, "`", add = add)
+    } else {
+      res <- all(mapply(`==`, class(sub_tbl[[subcol]]),
+                        class(sol_tbl[[solcol]])))
+      if (!res) {
+        add_feedback("* data type of column `", subcol,
+                     "` in `", subtbl, "` was incorrect",
+                     add = add)
+      } else {
+        add_feedback("* data type of column `", subcol, "` of `", subtbl,
+                     "` matched solution table",
+                     add = add)
+      }
+    }
+  }
+  res
 }

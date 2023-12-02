@@ -4,8 +4,15 @@
 \alias{render_solutions}
 \title{Render dynamic solutions to R Markdown}
 \usage{
-render_solutions(outfile, solfile, task_vars = NULL, preamble = "",
-  open = "{{", close = "}}", overwrite = FALSE)
+render_solutions(
+  outfile,
+  solfile,
+  task_vars = NULL,
+  preamble = "",
+  open = "{{",
+  close = "}}",
+  overwrite = FALSE
+)
 }
 \arguments{
 \item{outfile}{File path of R Markdown output file.}

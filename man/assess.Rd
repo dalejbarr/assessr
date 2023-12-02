@@ -4,9 +4,16 @@
 \alias{assess}
 \title{Assess a submission}
 \usage{
-assess(filename, sub_id = filename, key, use_sub_env = TRUE,
-  workdir = NULL, seed = NULL, preseed = NULL,
-  task_varnames = NULL)
+assess(
+  filename,
+  sub_id = filename,
+  key,
+  use_sub_env = TRUE,
+  workdir = NULL,
+  seed = NULL,
+  preseed = NULL,
+  task_varnames = NULL
+)
 }
 \arguments{
 \item{filename}{name of submission file}

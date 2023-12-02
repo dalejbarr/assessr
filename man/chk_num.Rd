@@ -24,12 +24,6 @@ chk_num(vnames, results, nums, solenv, format = "markdown", digits = 3)
 \item{x}{Character vector of names of variables to be checked.}
 
 \item{tolerance}{Tolerance for call to \code{\link{num_vals_close}}.}
-
-\item{solenv}{Solution environment.}
-
-\item{digits}{Number of digits for formatting output.}
-
-\item{tolerance}{Tolerance for call to \code{\link{num_vals_close}}.}
 }
 \description{
 Build a table showing numeric values against solution

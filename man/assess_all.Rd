@@ -4,9 +4,17 @@
 \alias{assess_all}
 \title{Assess all files in a directory}
 \usage{
-assess_all(dirname, key, sub_id = moodle_id(list_submissions(dirname)),
-  use_sub_env = TRUE, workdir = NULL, seed = NULL, preseed = NULL,
-  stop_after = -1L, task_varlist = NULL)
+assess_all(
+  dirname,
+  key,
+  sub_id = moodle_id(list_submissions(dirname)),
+  use_sub_env = TRUE,
+  workdir = NULL,
+  seed = NULL,
+  preseed = NULL,
+  stop_after = -1L,
+  task_varlist = NULL
+)
 }
 \arguments{
 \item{dirname}{name of the directory containing the submission files}
