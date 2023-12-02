@@ -1418,7 +1418,7 @@ apa_p <- function(x) {
          "$")
 }
 
-#' Are table column values equal
+#' Are table column values the same class
 #'
 #' @param subtbl name of submission table
 #' @param subcol name of column in submission table

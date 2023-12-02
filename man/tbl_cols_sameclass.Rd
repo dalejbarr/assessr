@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{tbl_cols_sameclass}
 \alias{tbl_cols_sameclass}
-\title{Are table column values equal}
+\title{Are table column values the same class}
 \usage{
 tbl_cols_sameclass(
   subtbl,
@@ -30,5 +30,5 @@ tbl_cols_sameclass(
 logical
 }
 \description{
-Are table column values equal
+Are table column values the same class
 }
