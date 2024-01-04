@@ -1456,3 +1456,47 @@ tbl_cols_sameclass <- function(subtbl, subcol,
   }
   res
 }
+
+#' Score a single multiple-choice option
+#'
+#' Checks  a single choice in the submission variable against the solution.
+#'
+#' @param subvar Name of the submission variable
+#' @param sol_env Solution environment
+#' @param opt Name of the option (e.g., "a", "b", "c")
+#' @param solvar Name of the solution variable
+#' @param add whether to add feedback
+#' @return logical; \code{TRUE} if element is present in both vectors or absent in both vectors
+#' @export
+score_mcq_opt <- function(subvar, sol_env, opt,
+                          solvar = subvar, add = TRUE) {
+  res <- c("is_char" = FALSE,
+           "vals_match" = FALSE)
+
+  sol_val <- get(solvar, envir = sol_env)
+  obj <- subvar
+  
+  if (!exists(subvar, envir = parent.frame(), inherits = FALSE)) {
+    add_feedback(paste0("* you did not define `", subvar, "`"),
+                 add = add)
+  } else {
+    sub_val <- get(subvar, envir = parent.frame(), inherits = FALSE)
+    if (!is.vector(sub_val)) {
+      add_feedback(paste0("* `", subvar, "` was not a vector"),
+                   add = add)
+    } else {
+      if (class(sub_val) != class(sol_val)) {
+        add_feedback(paste0("* `", subvar, "` was not of type '",
+                            class(sol_val), "'"), add = add)
+      } else {
+        res["is_char"] <- TRUE
+        opt2 <- tolower(opt)
+        sub2 <- tolower(sub_val)
+        sol2 <- tolower(sol_val)
+        res["vals_match"] <- (opt2 %in% sol2) == (opt2 %in% sub2)
+      }
+    }
+  }
+
+  return(res)
+}
