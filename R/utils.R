@@ -1457,24 +1457,28 @@ tbl_cols_sameclass <- function(subtbl, subcol,
   res
 }
 
-#' Score a single multiple-choice option
+#' Score multiple-choice question
 #'
-#' Checks  a single choice in the submission variable against the solution.
+#' Score a multiple-choice question.
 #'
 #' @param subvar Name of the submission variable
 #' @param sol_env Solution environment
-#' @param opt Name of the option (e.g., "a", "b", "c")
+#' @param opts_all Vector whose elements comprise the full set of options (e.g., "a", "b", "c", "d")
 #' @param solvar Name of the solution variable
+#' @param rectify Whether to attempt to correct the format of the submitted answer
 #' @param add whether to add feedback
-#' @return logical; \code{TRUE} if element is present in both vectors or absent in both vectors
+#' @return vector of logicals, one for each option, plus "type" and "fmt_ok" to indicate correctly formatted answer
 #' @export
-score_mcq_opt <- function(subvar, sol_env, opt,
-                          solvar = subvar, add = TRUE) {
-  res <- c("is_char" = FALSE,
-           "vals_match" = FALSE)
+score_mcq <- function(subvar, sol_env, opts_all,
+                      solvar = subvar, rectify = TRUE,
+                      add = TRUE) {
+  res <- c("type" = FALSE,
+           "fmt_ok" = FALSE)
+  vals <- rep(FALSE, length(opts_all))
+  names(vals) <- paste0("o", seq_along(opts_all))
 
   sol_val <- get(solvar, envir = sol_env)
-  obj <- subvar
+  sol2 <- tolower(sol_val) |> sort()
   
   if (!exists(subvar, envir = parent.frame(), inherits = FALSE)) {
     add_feedback(paste0("* you did not define `", subvar, "`"),
@@ -1489,14 +1493,43 @@ score_mcq_opt <- function(subvar, sol_env, opt,
         add_feedback(paste0("* `", subvar, "` was not of type '",
                             class(sol_val), "'"), add = add)
       } else {
-        res["is_char"] <- TRUE
-        opt2 <- tolower(opt)
-        sub2 <- tolower(sub_val)
-        sol2 <- tolower(sol_val)
-        res["vals_match"] <- (opt2 %in% sol2) == (opt2 %in% sub2)
+        res["type"] <- TRUE
+        sub2 <- tolower(sub_val) |> sort()
+        oall2 <- tolower(opts_all) |> sort()
+
+        ## check whether format is wrong, e.g.,
+        ## v <- "a, b, c" instead of v <- c("a", "b", "c")
+        sub3 <- if (rectify) {
+                  ## get rid of any white space
+                  resp_nows <- gsub("[[:space:]]", "", sub2)
+                  ## get rid of non-letter characters
+                  resp_lonly <- gsub("[^a-z]", "", sub2)
+                  ## collapse and then split
+                  resp_coll <- paste(resp_lonly, collapse = "")
+                  resp_corr <- strsplit(resp_coll, "")[[1]]
+                  res["fmt_ok"] <- isTRUE(identical(resp_nows, resp_corr))
+                  if (!res["fmt_ok"]) {
+                    add_feedback("* response formatted incorrectly; reformatted to ",
+                                 sprintf("`%s <- c(\"%s\")`", subvar, paste(resp_corr, collapse = "\", \"")),
+                                 add=add)
+                  }
+                  resp_corr
+                } else {
+                  sub2
+                }
+        ## check whether values match
+        vals[] <- sapply(oall2, \(.x) (.x %in% sol2) == (.x %in% sub3))
       }
     }
   }
 
-  return(res)
+  if (all(vals)) {
+    add_feedback("* answer matched solution", add = add)
+  } else {
+    add_feedback("* answer did not match solution ('",
+                 paste(sol2, collapse = "', '"), "')",
+                 add = add)
+  }
+  
+  return(c(res, vals))
 }
