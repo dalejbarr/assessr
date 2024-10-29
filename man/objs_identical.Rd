@@ -32,6 +32,6 @@ Are objects equal
 }
 \section{Functions}{
 \itemize{
-\item \code{objs_identical}: 
-}}
+\item \code{objs_identical()}: 
 
+}}

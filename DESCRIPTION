@@ -1,7 +1,7 @@
 Package: assessr
 Title: Computer-aided generation and assessment of R assignments
-Version: 0.1.7.9200
-Date: 2021-10-25
+Version: 0.1.8.0000
+Date: 2024-10-29
 Authors@R: person("Dale", "Barr", email = "dalejbarr@protonmail.com", role = c("aut", "cre"))
 Description: The assessr package makes it easy for instructors to
     generate and assess randomized R assignments. Assignments are
@@ -10,7 +10,7 @@ Description: The assessr package makes it easy for instructors to
     assessment. The instructor runs automated assessment on the files
     and then uses a shiny app to moderate the results. Finally, HTML
     feedback files are generated that can be distributed to students.
-Depends: R (>= 3.4.2)
+Depends: R (>= 4.1.0)
 License: CC BY-SA 4.0
 LazyData: true
 Imports: 
@@ -31,7 +31,7 @@ Imports:
     miniUI,
     shiny,
     kableExtra
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Suggests: 
     testthat (>= 2.1.0)
 Encoding: UTF-8

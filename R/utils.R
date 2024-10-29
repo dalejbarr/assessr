@@ -300,29 +300,42 @@ tbls_identical <- function(subtbl,
       ## reduce submission to include only cols in solution
       sub2 <- sub2[, intersect(colnames(sol2), colnames(sub2))]
     }
-    if (!dplyr::setequal(sol2, sub2)) {
-      add_feedback("* your table `", subtbl, "` differs from the solution table; see solution code", add = add)
+
+    ## as of May 2023, dplyr::setequal returns an error if data
+    ## frames are not compatible. see
+    ## https://github.com/tidyverse/dplyr/pull/6786
+    ## NB: dplyr:::is_compatible() is not an exported function!!
+    ## do something else?
+    if (!isTRUE(.msg <- dplyr:::is_compatible(sol2, sub2))) {
+      add_feedback("* your table ('y') differed from the solution ('x'): \n   - ",
+                   .msg, add = add)
     } else {
-      ## strict on rows or columns?
-      .testrow <- TRUE
-      .testcol <- TRUE
-      if (roworder_strict) {
-        solrows <- sapply(sol2, order)
-        subrows <- sapply(sub2, order)
-        .testrow <- identical(subrows[, colnames(solrows)], solrows)
-        if (!.testrow)
-          add_feedback("* Rows of your table `", subtbl, "` were in a different order than the rows in the solution.", add = add)
-      }
-      if (colorder_strict) {
-        .testcol <- identical(colnames(sol2), colnames(sub2))
-        if (!.testcol)
-          add_feedback("* Columns of your table `", subtbl, "` appeared in a different order than the columns in the solution.", add = add)
-      }
-      if (.testrow && .testcol) {
-        add_feedback("* your table `", subtbl, "` matched the solution table",
-                     add = add)
-        
-        res <- TRUE
+    
+      if (!dplyr::setequal(sol2, sub2)) {
+        add_feedback("* your table `", subtbl,
+                     "` differs from the solution table; see solution code", add = add)
+      } else {
+        ## strict on rows or columns?
+        .testrow <- TRUE
+        .testcol <- TRUE
+        if (roworder_strict) {
+          solrows <- sapply(sol2, order)
+          subrows <- sapply(sub2, order)
+          .testrow <- identical(subrows[, colnames(solrows)], solrows)
+          if (!.testrow)
+            add_feedback("* Rows of your table `", subtbl, "` were in a different order than the rows in the solution.", add = add)
+        }
+        if (colorder_strict) {
+          .testcol <- identical(colnames(sol2), colnames(sub2))
+          if (!.testcol)
+            add_feedback("* Columns of your table `", subtbl, "` appeared in a different order than the columns in the solution.", add = add)
+        }
+        if (.testrow && .testcol) {
+          add_feedback("* your table `", subtbl, "` matched the solution table",
+                       add = add)
+          
+          res <- TRUE
+        }
       }
     }
   }

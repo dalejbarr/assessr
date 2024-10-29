@@ -108,13 +108,15 @@ safe_eval <- function(this_code, this_env, new_device) {
 #' @param seed starting seed for random number generation (or NULL to not set the seed)
 #' @param preseed A named list whose names are the task names and whose elements are the RNG seeds to set prior to the task.
 #' @param task_varnames A named list of task variable names, where the names are are some or all of the task names and the elements are named character vectors of variables for the corresponding task.
+#' @param verbose Whether to report progress assessing individual tasks within the submission.
 #' @details Task variables are passed to the \code{task_varnames} argument to \code{\link{assess_task}}, and appear in the submission/assessment environment as the variable \code{._av}.
 #' @return A table
 #' @export
 assess <- function(filename, sub_id = filename, key,
                    use_sub_env = TRUE, workdir = NULL, seed = NULL,
                    preseed = NULL,
-                   task_varnames = NULL) {
+                   task_varnames = NULL,
+                   verbose = FALSE) {
   if (!is.null(task_varnames)) {
     ## make sure that it is a named list, and that the names
     ## correspond to the names of the tasks in key
@@ -213,6 +215,10 @@ assess <- function(filename, sub_id = filename, key,
 
     if (!is.null(preseed[[x]])) {
       set.seed(preseed[[x]])
+    }
+
+    if (verbose) {
+      message(" - task ", x)
     }
     
     ff <- safely_assess_task(sub_id, x, sub_chunks,
@@ -403,6 +409,7 @@ assessment_code <- function(s_file, o_file = "assess_code.Rmd",
 #' @param preseed Named list with random seed to set before each (named) block.
 #' @param stop_after stop processing after completing N files
 #' @param task_varlist Named list of lists, with each element having names corresponding to the names in \code{sub_id}, and with each sublist being itself a named list whose names correspond to task chunks. Elements of that second list should be named character vectors with task variables.
+#' @param verbose Whether to report on progress assessing individual tasks within assessments.
 #' @return a dataframe with the assessment variables and their values
 #' @export 
 assess_all <- function(dirname,
@@ -413,7 +420,8 @@ assess_all <- function(dirname,
                        seed = NULL,
                        preseed = NULL,
                        stop_after = -1L,
-                       task_varlist = NULL) {
+                       task_varlist = NULL,
+                       verbose = FALSE) {
 
   ## don't allow assessments where certain submissions are missing task vars
   if (!is.null(task_varlist)) {
@@ -447,6 +455,6 @@ assess_all <- function(dirname,
                    message("Processing ", .z, " of ", length(todo), " (",
                            .y, ")")
                    assess(.x, .y, .k, use_sub_env, workdir, seed, preseed,
-                          task_varnames = .t)
+                          task_varnames = .t, verbose = verbose)
                  })
 }

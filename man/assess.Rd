@@ -12,7 +12,8 @@ assess(
   workdir = NULL,
   seed = NULL,
   preseed = NULL,
-  task_varnames = NULL
+  task_varnames = NULL,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -36,6 +37,8 @@ environments will be ignored.}
 \item{preseed}{A named list whose names are the task names and whose elements are the RNG seeds to set prior to the task.}
 
 \item{task_varnames}{A named list of task variable names, where the names are are some or all of the task names and the elements are named character vectors of variables for the corresponding task.}
+
+\item{verbose}{Whether to report progress assessing individual tasks within the submission.}
 }
 \value{
 A table

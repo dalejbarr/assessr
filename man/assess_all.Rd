@@ -13,7 +13,8 @@ assess_all(
   seed = NULL,
   preseed = NULL,
   stop_after = -1L,
-  task_varlist = NULL
+  task_varlist = NULL,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ assess_all(
 \item{stop_after}{stop processing after completing N files}
 
 \item{task_varlist}{Named list of lists, with each element having names corresponding to the names in \code{sub_id}, and with each sublist being itself a named list whose names correspond to task chunks. Elements of that second list should be named character vectors with task variables.}
+
+\item{verbose}{Whether to report on progress assessing individual tasks within assessments.}
 }
 \value{
 a dataframe with the assessment variables and their values
