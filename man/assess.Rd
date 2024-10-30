@@ -30,7 +30,7 @@ of the previous chunk (to allow recovery from errors).  In the
 former case, all but the first of the `key$start_env`
 environments will be ignored.}
 
-\item{workdir}{the working directory in which to evaluate the code}
+\item{workdir}{the working directory in which to evaluate the code (deprecated; leave NULL).}
 
 \item{seed}{starting seed for random number generation (or NULL to not set the seed)}
 
@@ -47,5 +47,5 @@ A table
 Assess a submission
 }
 \details{
-Task variables are passed to the \code{task_varnames} argument to \code{\link{assess_task}}, and appear in the submission/assessment environment as the variable \code{._av}.
+Task variables are passed to the \code{task_varnames} argument to \code{\link{assess_task}}, and appear in the submission/assessment environment as the variable \code{._av}. The submission code will be evaluated with the working directory set to the subfolder containing the RMarkdown script.
 }

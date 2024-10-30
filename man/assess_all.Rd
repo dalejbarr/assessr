@@ -26,7 +26,7 @@ assess_all(
 
 \item{use_sub_env}{process submission code in the submission environment (\code{FALSE} to process it in the solution environment)}
 
-\item{workdir}{working directory}
+\item{workdir}{working directory (deprecated as of version 0.2.0.0000)}
 
 \item{seed}{random seed to set at the beginning}
 

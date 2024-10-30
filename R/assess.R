@@ -24,15 +24,15 @@ figdir <- function(sub_id, trailing = FALSE) {
 #' @export
 get_blacklist <- function() {
   blacklist <- c("install.packages", "update.packages", "download.packages",
-                 "remove.packages",
+                 "remove.packages", 
                  "tidyverse_update",
                  "setwd", "help", "vignette", "download.file", "system",
                  "help.start",
                  "file.remove", "curl", "View", "view", "browseURL", "set.seed")
   other <- tibble::tribble(~fn,        ~regex,
-          "? (help)", "(^|[^[:alnum:]_])*(\\?)\\s*[[:alnum:]]+",
-          "library() with no arguments",
-                 "(^|[^[:alnum:]_])*(library)[[:space:]]*\\(\\s*\\)")
+                           "? (help)", "(^|[^[:alnum:]_])*(\\?)\\s*[[:alnum:]]+",
+                           "library() with no arguments",
+                           "(^|[^[:alnum:]_])*(library)[[:space:]]*\\(\\s*\\)")
 
   dplyr::bind_rows(tibble::tibble(fn = blacklist,
                                   regex = fn_regex(blacklist)),
@@ -104,12 +104,12 @@ safe_eval <- function(this_code, this_env, new_device) {
 #'   of the previous chunk (to allow recovery from errors).  In the
 #'   former case, all but the first of the `key$start_env`
 #'   environments will be ignored.
-#' @param workdir the working directory in which to evaluate the code
+#' @param workdir the working directory in which to evaluate the code (deprecated; leave NULL).
 #' @param seed starting seed for random number generation (or NULL to not set the seed)
 #' @param preseed A named list whose names are the task names and whose elements are the RNG seeds to set prior to the task.
 #' @param task_varnames A named list of task variable names, where the names are are some or all of the task names and the elements are named character vectors of variables for the corresponding task.
 #' @param verbose Whether to report progress assessing individual tasks within the submission.
-#' @details Task variables are passed to the \code{task_varnames} argument to \code{\link{assess_task}}, and appear in the submission/assessment environment as the variable \code{._av}.
+#' @details Task variables are passed to the \code{task_varnames} argument to \code{\link{assess_task}}, and appear in the submission/assessment environment as the variable \code{._av}. The submission code will be evaluated with the working directory set to the subfolder containing the RMarkdown script.
 #' @return A table
 #' @export
 assess <- function(filename, sub_id = filename, key,
@@ -146,10 +146,15 @@ assess <- function(filename, sub_id = filename, key,
     this_env <- new.env(parent = key[["start_env"]][[1]])
   }
 
-  oldwd <- getwd()
   if (!is.null(workdir)) {
-    setwd(workdir)
+    deprecate_workdir("Please use `copy_data()` to copy files to submission subdirectories.")
   }
+
+  my_workdir <- dirname(filename)
+  ## oldwd <- getwd()
+  ## if (!is.null(workdir)) {
+  ##setwd(workdir)
+  ##}
 
   if (!is.null(seed)) {
     set.seed(seed)
@@ -187,7 +192,9 @@ assess <- function(filename, sub_id = filename, key,
           purrr::walk(chk_todo, function(nx) {
             imgfile <- tempfile()
             png(imgfile)
-            result <- safe_eval(sub_chunks[[nx]], this_env, new_device = FALSE)
+            result <- withr::with_dir(my_workdir,
+                                      safe_eval(sub_chunks[[nx]],
+                                                this_env, new_device = FALSE))
             dev.off()
             ## check for errors
             errs <- purrr::map_lgl(result, evaluate::is.error)
@@ -221,20 +228,22 @@ assess <- function(filename, sub_id = filename, key,
       message(" - task ", x)
     }
     
-    ff <- safely_assess_task(sub_id, x, sub_chunks,
-                             key[["a_code"]][[x]],
-                             this_env,
-                             key[["sol_env"]][[x]],
-                             use_sub_env,
-                             task_varnames[[x]]) ## TODO add taskvar argument here
+    ff <- withr::with_dir(my_workdir,
+                          safely_assess_task(sub_id, x, sub_chunks,
+                                             key[["a_code"]][[x]],
+                                             this_env,
+                                             key[["sol_env"]][[x]],
+                                             use_sub_env,
+                                             task_varnames[[x]]))
+    
     if (!is.null(ff[["error"]])) {
-      setwd(oldwd)
+      ## setwd(oldwd)
       stop(ff[["error"]][["message"]])
     } else {
       ff[["result"]]
     }
   })
-  setwd(oldwd)
+  ## setwd(oldwd)
   names(res) <- key[["task"]]
 
   restore_search_path(search_pre)
@@ -404,7 +413,7 @@ assessment_code <- function(s_file, o_file = "assess_code.Rmd",
 #' @param key Must be either: (1) A single key with answers to the problems, normally result of call to \code{link{compile_key}}; or (2) A named list of keys, with names matching the values of \code{sub_id}.
 #' @param sub_id subject identifies (vector same length as \code{dirname})
 #' @param use_sub_env process submission code in the submission environment (\code{FALSE} to process it in the solution environment)
-#' @param workdir working directory
+#' @param workdir working directory (deprecated as of version 0.2.0.0000)
 #' @param seed random seed to set at the beginning
 #' @param preseed Named list with random seed to set before each (named) block.
 #' @param stop_after stop processing after completing N files
@@ -430,6 +439,11 @@ assess_all <- function(dirname,
     }
   }
 
+  ## deprecate use of 'workdir'
+  if (!is.null(workdir)) {
+    deprecate_workdir("Please use `copy_data()` to copy files to submission subdirectories.")
+  }
+  
   if (!inherits(key, "data.frame")) {
     ## make sure we have multiple keys and that the names match
     if (!is.list(key))
@@ -457,4 +471,8 @@ assess_all <- function(dirname,
                    assess(.x, .y, .k, use_sub_env, workdir, seed, preseed,
                           task_varnames = .t, verbose = verbose)
                  })
+}
+
+deprecate_workdir <- function(extra = "") {
+  stop("The 'workdir' argument has been deprecated. Leave it set to NULL (default). ", extra)
 }
