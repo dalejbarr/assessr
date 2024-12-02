@@ -182,7 +182,11 @@ assess <- function(filename, sub_id = filename, key,
             ## which preceding blocks have task names
             pre <- purrr::map_lgl(chk_names_pre, ~ .x %in% task_names_pre)
             ## find the numeric index of last task that was executed
-            chk_ix_pre <- max(seq_along(pre)[pre])
+            if (any(pre)) {
+              chk_ix_pre <- max(seq_along(pre)[pre])
+            } else {
+              chk_ix_pre <- 0L
+            }
           } else {
             chk_ix_pre <- 0L
           }
