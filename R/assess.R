@@ -24,7 +24,7 @@ figdir <- function(sub_id, trailing = FALSE) {
 #' @export
 get_blacklist <- function() {
   blacklist <- c("install.packages", "update.packages", "download.packages",
-                 "remove.packages", 
+                 "remove.packages", "select.list",
                  "tidyverse_update",
                  "setwd", "help", "vignette", "download.file", "system",
                  "help.start",
